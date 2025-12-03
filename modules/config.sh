@@ -92,7 +92,7 @@ manage_secrets() {
     if [[ -z "${PRISM_PORT_INNER_VLESS}" ]]; then PRISM_PORT_INNER_VLESS=$(get_random_port); export PRISM_PORT_INNER_VLESS; save_needed=true; fi
 
     if [[ -z "${PRISM_HY2_PASSWORD}" ]]; then PRISM_HY2_PASSWORD=$(openssl rand -hex 16); save_needed=true; fi
-    if [[ -z "${PRISM_TUIC_UUID}" ]]; then PRISM_TUIC_UUID=$(${SINGBOX_BIN} generate uuid); save_needed=true; fi
+    if [[ -z "${PRISM_TUIC_UUID}" ]]; then PRISM_TUIC_UUID="${PRISM_UUID}"; save_needed=true; fi
     if [[ -z "${PRISM_TUIC_PASSWORD}" ]]; then PRISM_TUIC_PASSWORD=$(openssl rand -hex 8); save_needed=true; fi
     if [[ -z "${PRISM_ANYTLS_PASSWORD}" ]]; then PRISM_ANYTLS_PASSWORD=$(openssl rand -hex 16); save_needed=true; fi
     if [[ -z "${PRISM_ANYTLS_REALITY_PASSWORD}" ]]; then PRISM_ANYTLS_REALITY_PASSWORD=$(openssl rand -hex 16); save_needed=true; fi
