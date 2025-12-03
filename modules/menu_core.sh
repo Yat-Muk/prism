@@ -106,7 +106,8 @@ submenu_core() {
                     exit 0
                 else
 
-                    local update_url="https://raw.githubusercontent.com/Yat-Muk/prism/main/install.sh"
+                    local ts=$(date +%s)
+                    local update_url="https://raw.githubusercontent.com/Yat-Muk/prism/main/install.sh?t=${ts}"
                     
                     if wget -q -O "${BASE_DIR}/install.sh" "${update_url}"; then
                         chmod +x "${BASE_DIR}/install.sh"
