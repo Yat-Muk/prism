@@ -149,6 +149,7 @@ show_node_info() {
         echo -e " SNI (偽裝)     : ${C}${PRISM_DEST:-}${N}"
         echo -e " PBK (公鑰)     : ${C}${PRISM_PUBLIC_KEY:-}${N}"
         echo -e " SID (簡碼)     : ${C}${PRISM_SHORT_ID:-}${N}"
+        echo -e " Fingerp (指紋) : ${C}chrome${N}"
         
         local link="anytls://${PRISM_ANYTLS_REALITY_PASSWORD:-}@${ip}:${PRISM_PORT_ANYTLS_REALITY:-}?security=reality&sni=${PRISM_DEST:-}&pbk=${PRISM_PUBLIC_KEY:-}&sid=${PRISM_SHORT_ID:-}&fingerprint=chrome#Prism_AnyTLS_Reality"
         echo -e " ${D}-----------------------------------------------${N}"
