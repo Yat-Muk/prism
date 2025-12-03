@@ -46,7 +46,7 @@ submenu_core_upgrade() {
         echo -e "------------------------------------"
         echo -e "  1. 升級/切換最新正式版 ${G}${latest_stable}${N}"
         echo -e "  2. 升級/切換最新測試版 ${Y}${latest_beta}${N}"
-        echo -e "  3. 切換指定版本號 ${D}$(建議1.10.0以上)${N}"
+        echo -e "  3. 切換指定版本號 (1.10.0以上)"
         echo -e "  0. 返回"
         echo -e "================================================="
         echo -ne " 請輸入選項: "; read -r choice
@@ -88,7 +88,7 @@ submenu_core() {
         clear; print_banner
         echo -e " ${B}>>> 核心與腳本管理${N}"
         echo -e "================================================="
-        echo -e "  1. 核心升級/切換 ${D}(可指定版本)${N}"
+        echo -e "  1. 核心升級/切換 (可指定版本)"
         echo -e "  2. 腳本升級"
         echo -e "  0. 返回"
         echo -e "================================================="
@@ -98,13 +98,27 @@ submenu_core() {
             2) 
                 echo ""
                 info "正在更新 Prism 腳本..."
+
                 if [ -d "${BASE_DIR}/.git" ]; then
+                    echo -e "${Y}[Dev] 檢測到 Git 環境，嘗試 git pull...${N}"
                     git -C "${BASE_DIR}" pull || true
-                else
-                    local update_url="https://raw.githubusercontent.com/Yat-Muk/prism/main/install.sh"
-                    wget -q -O "${BASE_DIR}/install.sh" "${update_url}" && chmod +x "${BASE_DIR}/install.sh"
-                    success "腳本已下載，請重新運行 prism"
+                    success "Git 更新完成，請重新運行"
                     exit 0
+                else
+
+                    local update_url="https://raw.githubusercontent.com/Yat-Muk/prism/main/install.sh"
+                    
+                    if wget -q -O "${BASE_DIR}/install.sh" "${update_url}"; then
+                        chmod +x "${BASE_DIR}/install.sh"
+                        success "引導腳本下載成功，正在執行全量更新..."
+                        sleep 1
+
+                        bash "${BASE_DIR}/install.sh" update
+
+                        exit 0
+                    else
+                        error "下載失敗，請檢查網絡連接 (GitHub Raw)"
+                    fi
                 fi
                 read -p "按回車返回..." 
                 ;;
