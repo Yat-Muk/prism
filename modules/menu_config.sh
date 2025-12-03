@@ -210,7 +210,10 @@ change_uuid() {
     echo -ne " 選擇: "; read -r choice
     local new_uuid=""; case "$choice" in 1) new_uuid=$(${SINGBOX_BIN} generate uuid) ;; 2) read -p " UUID: " input_uuid; new_uuid="$input_uuid" ;; 0) submenu_config; return ;; *) error "無效"; sleep 1; change_uuid; return ;; esac
     if [[ -n "$new_uuid" ]]; then
-        update_secret "PRISM_UUID" "$new_uuid"
+        write_secret_no_apply "PRISM_UUID" "$new_uuid"
+        write_secret_no_apply "PRISM_TUIC_UUID" "$new_uuid"
+        apply_changes
+        read -p " 按回車返回菜單..."
         show_menu; return
     fi
     submenu_config
