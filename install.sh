@@ -74,11 +74,12 @@ check_env() {
 
 download_files() {
     echo_info "正在從 GitHub 拉取最新代碼..."
+    local ts=$(date +%s)
     
     for file in "${CORE_FILES[@]}"; do
-        if ! wget -q -O "${INSTALL_DIR}/${file}" "${REPO_URL}/${file}"; then
+        if ! wget -q -O "${INSTALL_DIR}/${file}" "${REPO_URL}/${file}?t=${ts}"; then
             echo_err "下載失敗: ${file}"
-            echo_err "請檢查網絡連通性 (是否能訪問 raw.githubusercontent.com)"
+            echo_err "請檢查網絡連通性"
             exit 1
         fi
     done
@@ -115,8 +116,17 @@ start_prism() {
     fi
 }
 
-if [[ "$1" != "update" && -f "${INSTALL_DIR}/modules/menu.sh" && -f "${INSTALL_DIR}/core/env.sh" ]]; then
+if [[ "$1" == "update" ]]; then
+    check_env
+    download_files
+    register_shortcut
+    echo_ok "更新完成，正在啟動..."
+    sleep 1
+    start_prism
+    exit 0
+fi
 
+if [[ -f "${INSTALL_DIR}/modules/menu.sh" && -f "${INSTALL_DIR}/core/env.sh" ]]; then
     start_prism
 else
     check_env
