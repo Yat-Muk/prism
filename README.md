@@ -24,7 +24,7 @@ Prism 原生支持以下 7 種主流協議，均可獨立開關與配置：
 4.  **TUIC v5** (QUIC) - *支持多端口復用*
 5.  **AnyTLS** (Standard TLS)
 6.  **AnyTLS + Reality**
-7.  **ShadowTLS v3** (Wrapper)
+7.  **ShadowTLS v3** 
 
 ## 📥 安裝與使用 (Installation)
 
