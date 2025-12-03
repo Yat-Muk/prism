@@ -13,7 +13,7 @@
 # GNU General Public License for more details.
 
 export PROJECT_NAME="Prism"
-export PROJECT_VERSION="v2.0.0"
+export PROJECT_VERSION="v2.0.1"
 export PROJECT_AUTHOR="Yat-Muk"
 export PROJECT_URL="https://github.com/Yat-Muk/prism"
 
