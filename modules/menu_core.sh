@@ -101,8 +101,8 @@ check_script_update() {
     
     local remote_ver=$(head -n 1 "$temp_version_file")
     local changelog=$(tail -n +2 "$temp_version_file")
-    local local_ver="${PROJECT_VERSION}"
     
+    local local_ver="${PROJECT_VERSION}"
     if [[ -f "${WORK_DIR}/version" ]]; then
         local_ver=$(head -n 1 "${WORK_DIR}/version")
     fi
@@ -173,7 +173,9 @@ submenu_core() {
         echo -ne " 請輸入選項: "; read -r choice
         case "$choice" in
             1) submenu_core_upgrade ;;
-            2) check_script_update; return ;;
+            2) check_script_update
+               break
+               ;;
             0) break ;;
             *) error "無效輸入"; sleep 1 ;;
         esac
