@@ -20,7 +20,7 @@ source "${BASE_DIR}/core/sys.sh"
 get_bbr_info() {
     current_kernel=$(uname -r)
     current_cc=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null)
-    current_qdisc=$(sysctl -n net.core.default_qdisc 2>/dev/null)
+    =$(sysctl -n net.core.default_qdisc 2>/dev/null)
     
     current_bbr_ver="${D}未知/未啟用${N}"
     if [[ "$current_cc" == "bbr" ]]; then
@@ -37,7 +37,7 @@ get_bbr_info() {
         fi
     fi
     
-    if [[ "$current_cc" == "bbr" && "$current_qdisc" == "fq" ]]; then
+    if [[ "$current_cc" == "bbr" && "$current_qdisc" == *"fq"* ]]; then
         bbr_status_icon="${G}● 運行中${N}"
     else
         bbr_status_icon="${R}○ 未啟用${N}"
@@ -145,6 +145,12 @@ bbr_traffic_monitor() {
         echo -e " ${B}>>> BBR 實時流量監控${N}"
         echo -e " ${D}提示：按 ${Y}Ctrl+C${D} 退出監控${N}"
         echo -e "${SEP}"
+        echo -e " 當前內核: ${C}${current_kernel}${N}"
+        echo -e " 擁塞控制: ${C}${current_cc:-unknown}${N}"
+        echo -e " 隊列算法: ${C}${current_qdisc:-unknown}${N}"
+        echo -e " BBR 版本: ${current_bbr_ver}"
+        echo -e " 運行狀態: ${bbr_status_icon}"
+        echo -e "${SEP}"
         
         ss -tinH state established | awk -v P="${P}" -v W="${W}" -v G="${G}" -v C="${C}" -v N="${N}" '
             function get_val(str, regex) {
@@ -194,6 +200,7 @@ action_bbr() {
         echo -e "${SEP}"
         echo -e " 當前內核: ${C}${current_kernel}${N}"
         echo -e " 擁塞控制: ${C}${current_cc:-unknown}${N}"
+        echo -e " 隊列算法: ${C}${current_qdisc:-unknown}${N}"
         echo -e " BBR 版本: ${current_bbr_ver}"
         echo -e " 運行狀態: ${bbr_status_icon}"
         echo -e "${SEP}"
