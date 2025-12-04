@@ -22,7 +22,7 @@ W="\033[37m"      # White (高亮文字)
 D="\033[90m"      # Dark Gray (分割線/次要信息)
 N="\033[0m"       # Reset
 
-SEP_LINE="${D}──────────────────────────────────────────────${N}"
+SEP="${D}=================================================${N}"
 
 print_banner() {
     clear
@@ -34,9 +34,10 @@ print_banner() {
  |  ___/ '__| / __| '_ ` _ \ 
  | |   | |  | \__ \ | | | | |
  |_|   |_|  |_|___/_| |_| |_|
+
+   :: Prism Network Stack :: 
 EOF
-    echo -e "   :: Prism Network Stack ::${N}"
-    echo -e "${SEP_LINE}"
+    echo -e "${N}"
 }
 
 print_header() {
