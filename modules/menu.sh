@@ -29,8 +29,7 @@ if [[ -f "${BASE_DIR}/modules/menu_bbr.sh" ]]; then source "${BASE_DIR}/modules/
 if [[ -f "${CONFIG_DIR}/secrets.env" ]]; then source "${CONFIG_DIR}/secrets.env"; fi
 
 get_script_update_info() {
-    local remote_ver=$(curl -sL --max-time 2 "https://raw.githubusercontent.com/Yat-Muk/prism/main/core/env.sh" | grep "PROJECT_VERSION=" | cut -d'"' -f2)
-    
+    local remote_ver=$(curl -sL --max-time 2 "https://raw.githubusercontent.com/Yat-Muk/prism/main/version" | head -n 1)
     if [[ -n "$remote_ver" && "$remote_ver" != "$PROJECT_VERSION" ]]; then
         echo "${Y}(發現新版: ${remote_ver})${N}"
     else
@@ -88,6 +87,13 @@ show_menu() {
     else 
         install_text="${R}部署服務${N}"
         install_color="${R}"
+    fi
+
+    local local_script_ver="未知"
+    if [[ -f "${WORK_DIR}/version" ]]; then
+        local_script_ver=$(head -n 1 "${WORK_DIR}/version")
+    else
+        local_script_ver="${PROJECT_VERSION}"
     fi
 
     print_banner
