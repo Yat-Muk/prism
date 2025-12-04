@@ -24,17 +24,22 @@ check_root() {
 }
 
 detect_os() {
-    if [[ -f /etc/os-release ]]; then
-        . /etc/os-release
-        OS_RELEASE=$ID
-        OS_VERSION=$VERSION_ID
+    if command -v lsb_release &> /dev/null; then
+        OS_RELEASE=$(lsb_release -is)
+        OS_VERSION=$(lsb_release -rs)
+    elif [[ -f /etc/os-release ]]; then
+        local id_val=$(grep -E "^ID=" /etc/os-release | cut -d= -f2 | tr -d '"')
+        local ver_val=$(grep -E "^VERSION_ID=" /etc/os-release | cut -d= -f2 | tr -d '"')
+        
+        OS_RELEASE="$(tr '[:lower:]' '[:upper:]' <<< ${id_val:0:1})${id_val:1}"
+        OS_VERSION="$ver_val"
     else
-        error "無法讀取 /etc/os-release，不支持此操作系統。"
-        exit 1
+        OS_RELEASE="Unknown"
+        OS_VERSION=""
     fi
-    
-    case "${OS_RELEASE}" in
-        ubuntu|debian|kali)
+
+    case "${OS_RELEASE,,}" in
+        ubuntu|debian|kali|linuxmint)
             PKG_MANAGER="apt"
             PKG_UPDATE_CMD="apt-get update -y"
             PKG_INSTALL_CMD="apt-get install -y --no-install-recommends"
@@ -50,10 +55,17 @@ detect_os() {
             PKG_INSTALL_CMD="apk add --no-cache"
             ;;
         *)
-            error "不支持的發行版: ${OS_RELEASE}"
-            exit 1
+            PKG_MANAGER="apt"
+            PKG_UPDATE_CMD="apt-get update -y"
+            PKG_INSTALL_CMD="apt-get install -y"
             ;;
     esac
+
+    export OS_RELEASE
+    export OS_VERSION
+    export PKG_MANAGER
+    export PKG_UPDATE_CMD
+    export PKG_INSTALL_CMD
 }
 
 install_base_dependencies() {
@@ -75,9 +87,9 @@ install_base_dependencies() {
     done
 
     if [[ -n "${missing_packages}" ]]; then
-        info "檢測到缺失依賴，正在補全: ${missing_packages}"
-        run_step "更新軟件源緩存" "${PKG_UPDATE_CMD}"
-        run_step "安裝依賴組件" "${PKG_INSTALL_CMD} ${missing_packages}"
+        echo "正在安裝依賴: ${missing_packages}"
+        ${PKG_UPDATE_CMD} >/dev/null 2>&1
+        ${PKG_INSTALL_CMD} ${missing_packages} >/dev/null 2>&1
     fi
 }
 
