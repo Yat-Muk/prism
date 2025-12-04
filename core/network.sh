@@ -28,46 +28,57 @@ check_network_stack() {
     fi
 }
 
-apply_iptables_rule() {
-    local proto=$1
-    local start=$2
-    local end=$3
-    local target=$4
-    local comment="prism_$5"
-
+init_iptables_chain() {
     if ! command -v iptables &> /dev/null; then return; fi
-
-    iptables -t nat -S PREROUTING | grep "$comment" | sed 's/-A/-D/' | while read -r rule; do
-        iptables -t nat $rule >/dev/null 2>&1
-    done
     
-    iptables -S INPUT | grep "$comment" | sed 's/-A/-D/' | while read -r rule; do
-        iptables $rule >/dev/null 2>&1
-    done
+    local chain_name="PRISM_HOPPING"
+    
+    if ! iptables -t nat -N "${chain_name}" 2>/dev/null; then true; fi
+    if ! iptables -N "${chain_name}" 2>/dev/null; then true; fi
+
+    if ! iptables -t nat -C PREROUTING -p udp -j "${chain_name}" 2>/dev/null; then
+        iptables -t nat -A PREROUTING -p udp -j "${chain_name}"
+    fi
+    
+    if ! iptables -C INPUT -p udp -j "${chain_name}" 2>/dev/null; then
+        iptables -A INPUT -p udp -j "${chain_name}"
+    fi
+}
+
+add_hopping_rule() {
+    local start=$1
+    local end=$2
+    local target_port=$3
+    local comment=$4
+    local chain_name="PRISM_HOPPING"
 
     if [[ -n "$start" && -n "$end" && "$start" != "0" ]]; then
-        iptables -t nat -A PREROUTING -p $proto --dport "$start:$end" -m comment --comment "$comment" -j REDIRECT --to-ports "$target"
-        iptables -A INPUT -p $proto --dport "$start:$end" -m comment --comment "$comment" -j ACCEPT
+        iptables -t nat -A "${chain_name}" -p udp --dport "${start}:${end}" -m comment --comment "${comment}" -j REDIRECT --to-ports "${target_port}"
+        iptables -A "${chain_name}" -p udp --dport "${start}:${end}" -m comment --comment "${comment}" -j ACCEPT
     fi
 }
 
 update_all_port_hopping() {
     if [[ -f "${CONFIG_DIR}/secrets.env" ]]; then source "${CONFIG_DIR}/secrets.env"; fi
+    if ! command -v iptables &> /dev/null; then return; fi
+
+    local chain_name="PRISM_HOPPING"
     
+    init_iptables_chain
+
+    iptables -t nat -F "${chain_name}"
+    iptables -F "${chain_name}"
+
     if [[ "${PRISM_ENABLE_HY2:-false}" == "true" && -n "${PRISM_HY2_PORT_HOPPING:-}" ]]; then
         local start=$(echo "${PRISM_HY2_PORT_HOPPING}" | cut -d- -f1)
         local end=$(echo "${PRISM_HY2_PORT_HOPPING}" | cut -d- -f2)
-        apply_iptables_rule "udp" "$start" "$end" "${PRISM_PORT_HY2:-}" "hy2_hopping"
-    else
-        apply_iptables_rule "udp" "0" "0" "0" "hy2_hopping"
+        add_hopping_rule "$start" "$end" "${PRISM_PORT_HY2}" "prism_hy2_hopping"
     fi
 
     if [[ "${PRISM_ENABLE_TUIC:-false}" == "true" && -n "${PRISM_TUIC_PORT_HOPPING:-}" ]]; then
         local start=$(echo "${PRISM_TUIC_PORT_HOPPING}" | cut -d- -f1)
         local end=$(echo "${PRISM_TUIC_PORT_HOPPING}" | cut -d- -f2)
-        apply_iptables_rule "udp" "$start" "$end" "${PRISM_PORT_TUIC:-}" "tuic_hopping"
-    else
-        apply_iptables_rule "udp" "0" "0" "0" "tuic_hopping"
+        add_hopping_rule "$start" "$end" "${PRISM_PORT_TUIC}" "prism_tuic_hopping"
     fi
     
     if command -v netfilter-persistent &> /dev/null; then
