@@ -12,163 +12,204 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+source "${BASE_DIR}/core/env.sh"
+source "${BASE_DIR}/core/ui.sh"
+
 print_qr_block() {
     local link="$1"
+    local title="$2"
+    
+    echo -e ""
+    echo -e " ${D}--- ${title} 二維碼 ---${N}"
     if command -v qrencode &> /dev/null; then
-        echo -e "${D}--- 二維碼 (QR Code) ---${N}"
         qrencode -t ANSIUTF8 -k "${link}" 2>/dev/null || qrencode -t ANSI "${link}"
+    else
+        echo -e " ${Y}[未安裝 qrencode，無法顯示二維碼]${N}"
     fi
-    echo ""
+    echo -e ""
+}
+
+p_kv() {
+    printf " %b%-15s%b : %b\n" "${C}" "$1" "${N}" "$2"
 }
 
 show_node_info() {
-    if [[ ! -f "${CONFIG_DIR}/secrets.env" ]]; then warn "未配置"; read -p "返回..." ; show_menu; return; fi
+    if [[ ! -f "${CONFIG_DIR}/secrets.env" ]]; then 
+        error "配置文件不存在，請先安裝或配置協議。"
+        read -p " 按回車返回..." 
+        show_menu; return
+    fi
     source "${CONFIG_DIR}/secrets.env"
     
-    if [[ -z "${PRISM_ENABLE_SHADOWTLS:-}" ]]; then
-        clear; echo -e "${R}[錯誤] 配置文件數據過舊。${N}"; echo "請執行: 4. 配置管理 -> 2. 重置配置"
-        read -p "..."; return
+    if [[ -z "${PRISM_UUID}" ]]; then
+        error "配置數據不完整，建議執行 [4.配置管理] -> [2.重置配置]"
+        read -p " 按回車返回..." 
+        show_menu; return
     fi
 
     local ip="${IPV4_ADDR:-${IPV6_ADDR}}"
-    if [[ -z "${IPV4_ADDR}" ]]; then ip="[${IPV6_ADDR}]"; fi
+    if [[ "$ip" == *":"* ]]; then ip="[${ip}]"; fi
     
-    clear; print_banner; echo -e " ${P}>>> 節點詳細信息 (Node Details)${N}"
+    clear; print_banner
+    echo -e " ${P}>>> 節點鏈接詳情 (Node Links)${N}"
+    echo -e " ${D}提示：請複製以 ${Y}vmess://, vless://, ...${D} 開頭的鏈接${N}"
+    echo -e "${SEP}"
+
+    local node_count=0
 
     if [[ "${PRISM_ENABLE_REALITY_VISION}" == "true" ]]; then
-        echo -e "${SEP}\n ${G}VLESS Reality Vision${N} (TCP)"
-        echo -e " Address (地址) : ${Y}${ip}${N}"
-        echo -e " Port (端口)    : ${Y}${PRISM_PORT_REALITY_VISION:-}${N}"
-        echo -e " UUID (用戶ID)  : ${C}${PRISM_UUID:-}${N}"
-        echo -e " Network (傳輸) : ${C}tcp${N}"
-        echo -e " Flow (流控)    : ${C}xtls-rprx-vision${N}"
-        echo -e " SNI (偽裝)     : ${C}${PRISM_DEST:-}${N}"
-        echo -e " PBK (公鑰)     : ${C}${PRISM_PUBLIC_KEY:-}${N}"
-        echo -e " SID (簡碼)     : ${C}${PRISM_SHORT_ID:-}${N}"
-        echo -e " Fingerp (指紋) : ${C}chrome${N}"
-        local link="vless://${PRISM_UUID:-}@${ip}:${PRISM_PORT_REALITY_VISION:-}?security=reality&encryption=none&pbk=${PRISM_PUBLIC_KEY:-}&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=${PRISM_DEST:-}&sid=${PRISM_SHORT_ID:-}#Prism_Vision"
+        ((node_count++))
+        echo -e " ${G}1. VLESS Reality Vision${N} ${D}(TCP)${N}"
+        p_kv "Address" "${Y}${ip}${N}"
+        p_kv "Port"    "${Y}${PRISM_PORT_REALITY_VISION}${N}"
+        p_kv "UUID"    "${PRISM_UUID}"
+        p_kv "Flow"    "xtls-rprx-vision"
+        p_kv "SNI"     "${PRISM_DEST}"
+        p_kv "Fingerprint" "chrome"
+        
+        local link="vless://${PRISM_UUID}@${ip}:${PRISM_PORT_REALITY_VISION}?security=reality&encryption=none&pbk=${PRISM_PUBLIC_KEY}&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=${PRISM_DEST}&sid=${PRISM_SHORT_ID}#Prism_Vision"
         echo -e " ${D}-----------------------------------------------${N}"
-        echo -e " ${Y}${link}${N}"; print_qr_block "${link}"
+        echo -e "${W}${link}${N}"
+        print_qr_block "${link}" "Vision"
+        echo -e "${SEP}"
     fi
 
     if [[ "${PRISM_ENABLE_REALITY_GRPC}" == "true" ]]; then
-        echo -e "${SEP}\n ${G}VLESS Reality gRPC${N}"
-        echo -e " Address (地址) : ${Y}${ip}${N}"
-        echo -e " Port (端口)    : ${Y}${PRISM_PORT_REALITY_GRPC:-}${N}"
-        echo -e " UUID (用戶ID)  : ${C}${PRISM_UUID:-}${N}"
-        echo -e " Network (傳輸) : ${C}grpc${N}"
-        echo -e " Service (服務) : ${C}grpc${N}"
-        echo -e " SNI (偽裝)     : ${C}${PRISM_DEST:-}${N}"
-        echo -e " PBK (公鑰)     : ${C}${PRISM_PUBLIC_KEY:-}${N}"
-        echo -e " SID (簡碼)     : ${C}${PRISM_SHORT_ID:-}${N}"
-        local link="vless://${PRISM_UUID:-}@${ip}:${PRISM_PORT_REALITY_GRPC:-}?security=reality&encryption=none&pbk=${PRISM_PUBLIC_KEY:-}&fp=chrome&type=grpc&serviceName=grpc&sni=${PRISM_DEST:-}&sid=${PRISM_SHORT_ID:-}#Prism_Reality_gRPC"
+        ((node_count++))
+        echo -e " ${G}2. VLESS Reality gRPC${N}"
+        p_kv "Address" "${Y}${ip}${N}"
+        p_kv "Port"    "${Y}${PRISM_PORT_REALITY_GRPC}${N}"
+        p_kv "UUID"    "${PRISM_UUID}"
+        p_kv "Mode"    "gRPC"
+        p_kv "SNI"     "${PRISM_DEST}"
+        
+        local link="vless://${PRISM_UUID}@${ip}:${PRISM_PORT_REALITY_GRPC}?security=reality&encryption=none&pbk=${PRISM_PUBLIC_KEY}&fp=chrome&type=grpc&serviceName=grpc&sni=${PRISM_DEST}&sid=${PRISM_SHORT_ID}#Prism_gRPC"
         echo -e " ${D}-----------------------------------------------${N}"
-        echo -e " ${Y}${link}${N}"; print_qr_block "${link}"
+        echo -e "${W}${link}${N}"
+        print_qr_block "${link}" "gRPC"
+        echo -e "${SEP}"
     fi
 
     if [[ "${PRISM_ENABLE_HY2}" == "true" ]]; then
-        echo -e "${SEP}\n ${G}Hysteria 2${N} (UDP)"
-        echo -e " Address (地址) : ${Y}${ip}${N}"
-        local hy2_port_display="${PRISM_PORT_HY2:-}"
-        if [[ -n "${PRISM_HY2_PORT_HOPPING:-}" ]]; then
-            hy2_port_display="${PRISM_PORT_HY2:-} (Hopping: ${PRISM_HY2_PORT_HOPPING})"
-        fi
-        echo -e " Port (端口)    : ${Y}${hy2_port_display}${N}"
-        echo -e " Password (密碼): ${C}${PRISM_HY2_PASSWORD:-}${N}"
-        echo -e " Network (傳輸) : ${C}udp${N}"
+        ((node_count++))
+        echo -e " ${G}3. Hysteria 2${N} ${D}(UDP)${N}"
+        p_kv "Address" "${Y}${ip}${N}"
         
-        local hy2_sni="www.bing.com"
-        local hy2_insecure="1"
-        local hy2_insecure_label="${R}True${N}"
-        if [[ "${PRISM_HY2_CERT_MODE:-}" == "acme" && -n "${PRISM_ACME_DOMAIN:-}" ]]; then
-            hy2_sni="${PRISM_ACME_DOMAIN}"
-            hy2_insecure="0"
-            hy2_insecure_label="${G}False${N}"
+        local port_display="${PRISM_PORT_HY2}"
+        if [[ -n "${PRISM_HY2_PORT_HOPPING}" ]]; then
+            port_display="${PRISM_PORT_HY2} (Hopping: ${PRISM_HY2_PORT_HOPPING})"
         fi
+        p_kv "Port"     "${Y}${port_display}${N}"
+        p_kv "Password" "${PRISM_HY2_PASSWORD}"
         
-        echo -e " SNI (偽裝)     : ${C}${hy2_sni}${N}"
-        echo -e " Insecure (驗證): ${hy2_insecure_label}"
-        local link="hysteria2://${PRISM_HY2_PASSWORD:-}@${ip}:${PRISM_PORT_HY2:-}?insecure=${hy2_insecure}&sni=${hy2_sni}#Prism_Hy2"
+        local sni="www.bing.com"
+        local insecure="1"
+        if [[ "${PRISM_HY2_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then
+            sni="${PRISM_ACME_DOMAIN}"
+            insecure="0"
+            p_kv "Cert Mode" "${G}ACME (Valid)${N}"
+        else
+            p_kv "Cert Mode" "${R}Self-Signed (Insecure)${N}"
+        fi
+        p_kv "SNI" "${sni}"
+
+        local link="hysteria2://${PRISM_HY2_PASSWORD}@${ip}:${PRISM_PORT_HY2}?insecure=${insecure}&sni=${sni}#Prism_Hy2"
         echo -e " ${D}-----------------------------------------------${N}"
-        echo -e " ${Y}${link}${N}"; print_qr_block "${link}"
+        echo -e "${W}${link}${N}"
+        print_qr_block "${link}" "Hy2"
+        echo -e "${SEP}"
     fi
 
     if [[ "${PRISM_ENABLE_TUIC}" == "true" ]]; then
-        echo -e "${SEP}\n ${G}TUIC v5${N} (QUIC)"
-        echo -e " Address (地址) : ${Y}${ip}${N}"
-        local tuic_port_display="${PRISM_PORT_TUIC:-}"
-        if [[ -n "${PRISM_TUIC_PORT_HOPPING:-}" ]]; then
-            tuic_port_display="${PRISM_PORT_TUIC:-} (Hopping: ${PRISM_TUIC_PORT_HOPPING})"
-        fi
-        echo -e " Port (端口)    : ${Y}${tuic_port_display}${N}"
-        echo -e " UUID (用戶ID)  : ${C}${PRISM_TUIC_UUID:-}${N}"
-        echo -e " Password (密碼): ${C}${PRISM_TUIC_PASSWORD:-}${N}"
-        echo -e " Network (傳輸) : ${C}udp${N}"
-        echo -e " Congest (擁塞) : ${C}bbr${N}"
+        ((node_count++))
+        echo -e " ${G}4. TUIC v5${N} ${D}(QUIC)${N}"
+        p_kv "Address" "${Y}${ip}${N}"
         
-        local tuic_sni="www.bing.com"
-        local tuic_insecure="1"
-        local tuic_insecure_label="${R}True${N}"
-        if [[ "${PRISM_TUIC_CERT_MODE:-}" == "acme" && -n "${PRISM_ACME_DOMAIN:-}" ]]; then
-            tuic_sni="${PRISM_ACME_DOMAIN}"
-            tuic_insecure="0"
-            tuic_insecure_label="${G}False${N}"
+        local port_display="${PRISM_PORT_TUIC}"
+        if [[ -n "${PRISM_TUIC_PORT_HOPPING}" ]]; then
+            port_display="${PRISM_PORT_TUIC} (Hopping: ${PRISM_TUIC_PORT_HOPPING})"
         fi
+        p_kv "Port"     "${Y}${port_display}${N}"
+        p_kv "UUID"     "${PRISM_TUIC_UUID}"
+        p_kv "Password" "${PRISM_TUIC_PASSWORD}"
+        p_kv "Congestion" "bbr"
+        
+        local sni="www.bing.com"
+        local insecure="1"
+        if [[ "${PRISM_TUIC_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then
+            sni="${PRISM_ACME_DOMAIN}"
+            insecure="0"
+            p_kv "Cert Mode" "${G}ACME (Valid)${N}"
+        else
+            p_kv "Cert Mode" "${R}Self-Signed (Insecure)${N}"
+        fi
+        p_kv "SNI" "${sni}"
 
-        echo -e " SNI (偽裝)     : ${C}${tuic_sni}${N}"
-        echo -e " Insecure (驗證): ${tuic_insecure_label}"
-        local link="tuic://${PRISM_TUIC_UUID:-}:${PRISM_TUIC_PASSWORD:-}@${ip}:${PRISM_PORT_TUIC:-}?congestion_control=bbr&udp_relay_mode=native&allow_insecure=${tuic_insecure}&sni=${tuic_sni}#Prism_TUIC"
+        local link="tuic://${PRISM_TUIC_UUID}:${PRISM_TUIC_PASSWORD}@${ip}:${PRISM_PORT_TUIC}?congestion_control=bbr&udp_relay_mode=native&allow_insecure=${insecure}&sni=${sni}#Prism_TUIC"
         echo -e " ${D}-----------------------------------------------${N}"
-        echo -e " ${Y}${link}${N}"; print_qr_block "${link}"
+        echo -e "${W}${link}${N}"
+        print_qr_block "${link}" "TUIC"
+        echo -e "${SEP}"
     fi
 
     if [[ "${PRISM_ENABLE_ANYTLS}" == "true" ]]; then
-        echo -e "${SEP}\n ${G}AnyTLS${N} (Native TLS)"
-        echo -e " Address (地址) : ${Y}${ip}${N}"
-        echo -e " Port (端口)    : ${Y}${PRISM_PORT_ANYTLS:-}${N}"
-        echo -e " Password (密碼): ${C}${PRISM_ANYTLS_PASSWORD:-}${N}"
+        ((node_count++))
+        echo -e " ${G}5. AnyTLS${N} ${D}(Native TLS)${N}"
+        p_kv "Address"  "${Y}${ip}${N}"
+        p_kv "Port"     "${Y}${PRISM_PORT_ANYTLS}${N}"
+        p_kv "Password" "${PRISM_ANYTLS_PASSWORD}"
         
-        local any_sni="www.bing.com"
-        local any_insecure="1"
-        if [[ "${PRISM_ANYTLS_CERT_MODE:-}" == "acme" && -n "${PRISM_ACME_DOMAIN:-}" ]]; then
-            any_sni="${PRISM_ACME_DOMAIN}"
-            any_insecure="0"
+        local sni="www.bing.com"
+        local insecure="1"
+        if [[ "${PRISM_ANYTLS_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then
+            sni="${PRISM_ACME_DOMAIN}"
+            insecure="0"
         fi
-        echo -e " SNI (偽裝)     : ${C}${any_sni}${N}"
+        p_kv "SNI" "${sni}"
         
-        local link="anytls://${PRISM_ANYTLS_PASSWORD:-}@${ip}:${PRISM_PORT_ANYTLS:-}?sni=${any_sni}&insecure=${any_insecure}&peer=${any_sni}#Prism_AnyTLS"
+        local link="anytls://${PRISM_ANYTLS_PASSWORD}@${ip}:${PRISM_PORT_ANYTLS}?sni=${sni}&insecure=${insecure}&peer=${sni}#Prism_AnyTLS"
         echo -e " ${D}-----------------------------------------------${N}"
-        echo -e " ${Y}${link}${N}"; print_qr_block "${link}"
+        echo -e "${W}${link}${N}"
+        print_qr_block "${link}" "AnyTLS"
+        echo -e "${SEP}"
     fi
 
     if [[ "${PRISM_ENABLE_ANYTLS_REALITY}" == "true" ]]; then
-        echo -e "${SEP}\n ${G}AnyTLS + Reality${N}"
-        echo -e " Address (地址) : ${Y}${ip}${N}"
-        echo -e " Port (端口)    : ${Y}${PRISM_PORT_ANYTLS_REALITY:-}${N}"
-        echo -e " Password (密碼): ${C}${PRISM_ANYTLS_REALITY_PASSWORD:-}${N}"
-        echo -e " SNI (偽裝)     : ${C}${PRISM_DEST:-}${N}"
-        echo -e " PBK (公鑰)     : ${C}${PRISM_PUBLIC_KEY:-}${N}"
-        echo -e " SID (簡碼)     : ${C}${PRISM_SHORT_ID:-}${N}"
-        echo -e " Fingerp (指紋) : ${C}chrome${N}"
+        ((node_count++))
+        echo -e " ${G}6. AnyTLS + Reality${N}"
+        p_kv "Address"  "${Y}${ip}${N}"
+        p_kv "Port"     "${Y}${PRISM_PORT_ANYTLS_REALITY}${N}"
+        p_kv "Password" "${PRISM_ANYTLS_REALITY_PASSWORD}"
+        p_kv "SNI"      "${PRISM_DEST}"
         
-        local link="anytls://${PRISM_ANYTLS_REALITY_PASSWORD:-}@${ip}:${PRISM_PORT_ANYTLS_REALITY:-}?security=reality&sni=${PRISM_DEST:-}&pbk=${PRISM_PUBLIC_KEY:-}&sid=${PRISM_SHORT_ID:-}&fingerprint=chrome#Prism_AnyTLS_Reality"
+        local link="anytls://${PRISM_ANYTLS_REALITY_PASSWORD}@${ip}:${PRISM_PORT_ANYTLS_REALITY}?security=reality&sni=${PRISM_DEST}&pbk=${PRISM_PUBLIC_KEY}&sid=${PRISM_SHORT_ID}&fingerprint=chrome#Prism_AnyTLS_Reality"
         echo -e " ${D}-----------------------------------------------${N}"
-        echo -e " ${Y}${link}${N}"; print_qr_block "${link}"
+        echo -e "${W}${link}${N}"
+        print_qr_block "${link}" "AnyReality"
+        echo -e "${SEP}"
     fi
 
     if [[ "${PRISM_ENABLE_SHADOWTLS}" == "true" ]]; then
-        echo -e "${SEP}\n ${G}ShadowTLS v3${N} (Wrapper)"
-        echo -e " Address (地址) : ${Y}${ip}${N}"
-        echo -e " Port (端口)    : ${Y}${PRISM_PORT_SHADOWTLS:-}${N}"
-        echo -e " Password (密碼): ${C}${PRISM_SHADOWTLS_PASSWORD:-}${N}"
-        echo -e " Handshake (握手): ${C}${PRISM_DEST:-www.microsoft.com}${N}"
-        echo -e " Version (版本) : ${C}3${N}"
+        ((node_count++))
+        echo -e " ${G}7. ShadowTLS v3${N}"
+        p_kv "Address"  "${Y}${ip}${N}"
+        p_kv "Port"     "${Y}${PRISM_PORT_SHADOWTLS}${N}"
+        p_kv "Password" "${PRISM_SHADOWTLS_PASSWORD}"
+        p_kv "Handshake" "${PRISM_DEST}"
         
-        local link="vless://${PRISM_UUID:-}@${ip}:${PRISM_PORT_SHADOWTLS:-}?security=shadowtls&encryption=none&type=tcp&sni=${PRISM_DEST:-www.microsoft.com}&password=${PRISM_SHADOWTLS_PASSWORD:-}&version=3#Prism_ShadowTLS"
+        local link="vless://${PRISM_UUID}@${ip}:${PRISM_PORT_SHADOWTLS}?security=shadowtls&encryption=none&type=tcp&sni=${PRISM_DEST}&password=${PRISM_SHADOWTLS_PASSWORD}&version=3#Prism_ShadowTLS"
         echo -e " ${D}-----------------------------------------------${N}"
-        echo -e " ${Y}${link}${N}"; print_qr_block "${link}"
+        echo -e "${W}${link}${N}"
+        print_qr_block "${link}" "ShadowTLS"
+        echo -e "${SEP}"
     fi
 
-    read -p "按回車返回菜單..."
+    if [[ "$node_count" -eq 0 ]]; then
+        echo -e " ${Y}當前沒有開啟任何協議節點。${N}"
+        echo -e " 請前往 [4. 配置與協議管理] -> [1. 協議管理] 開啟。"
+        echo -e "${SEP}"
+    fi
+
+    read -p " 按回車返回菜單..."
     show_menu
 }
