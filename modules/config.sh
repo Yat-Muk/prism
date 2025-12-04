@@ -28,6 +28,7 @@ get_random_port() {
 ensure_certificates() {
     local key_file="${CERT_DIR}/self_signed.key"
     local cert_file="${CERT_DIR}/self_signed.crt"
+    mkdir -p "${CERT_DIR}"
     if [[ ! -f "${key_file}" ]] || [[ ! -f "${cert_file}" ]]; then
         log_info "生成自簽名證書..."
         openssl req -x509 -newkey rsa:2048 -nodes -sha256 -keyout "${key_file}" -out "${cert_file}" -days 3650 -subj "/CN=www.bing.com" >/dev/null 2>&1
@@ -45,11 +46,67 @@ get_cert_paths() {
     ensure_certificates; echo "${CERT_DIR}/self_signed.crt|${CERT_DIR}/self_signed.key"
 }
 
+set_env_default() {
+    local key="$1"
+    local val="$2"
+    if [[ -z "${!key}" ]]; then
+        if ! grep -q "^export ${key}=" "${SECRETS_FILE}" 2>/dev/null; then
+            echo "export ${key}=\"${val}\"" >> "${SECRETS_FILE}"
+        fi
+        export "${key}=${val}"
+    fi
+}
+
 manage_secrets() {
-    if [[ -f "${SECRETS_FILE}" ]]; then source "${SECRETS_FILE}"; fi
+    if [[ ! -f "${SECRETS_FILE}" ]]; then touch "${SECRETS_FILE}"; fi
+    source "${SECRETS_FILE}"
+
+    if [[ -z "${PRISM_UUID}" ]]; then
+        local new_uuid=$(${SINGBOX_BIN} generate uuid)
+        set_env_default "PRISM_UUID" "$new_uuid"
+        set_env_default "PRISM_TUIC_UUID" "$new_uuid"
+    fi
     
-    : "${PRISM_UUID:=$(${SINGBOX_BIN} generate uuid)}"
-    : "${PRISM_OUTBOUND_MODE:=prefer_ipv4}"
+    if [[ -z "${PRISM_PRIVATE_KEY}" ]]; then
+        local keypair=$(${SINGBOX_BIN} generate reality-keypair)
+        local pk=$(echo "$keypair" | grep "PrivateKey" | awk '{print $2}')
+        local pub=$(echo "$keypair" | grep "PublicKey" | awk '{print $2}')
+        set_env_default "PRISM_PRIVATE_KEY" "$pk"
+        set_env_default "PRISM_PUBLIC_KEY" "$pub"
+        set_env_default "PRISM_SHORT_ID" "$(openssl rand -hex 8)"
+        set_env_default "PRISM_DEST" "www.microsoft.com"
+        set_env_default "PRISM_DEST_PORT" "443"
+    fi
+
+    set_env_default "PRISM_PORT_REALITY_VISION" "$(get_random_port)"
+    set_env_default "PRISM_PORT_REALITY_GRPC" "$(get_random_port)"
+    set_env_default "PRISM_PORT_HY2" "$(get_random_port)"
+    set_env_default "PRISM_PORT_TUIC" "$(get_random_port)"
+    set_env_default "PRISM_PORT_ANYTLS" "$(get_random_port)"
+    set_env_default "PRISM_PORT_ANYTLS_REALITY" "$(get_random_port)"
+    set_env_default "PRISM_PORT_SHADOWTLS" "$(get_random_port)"
+    set_env_default "PRISM_PORT_INNER_VLESS" "$(get_random_port)"
+
+    set_env_default "PRISM_HY2_PASSWORD" "$(openssl rand -hex 16)"
+    set_env_default "PRISM_TUIC_PASSWORD" "$(openssl rand -hex 8)"
+    set_env_default "PRISM_ANYTLS_PASSWORD" "$(openssl rand -hex 16)"
+    set_env_default "PRISM_ANYTLS_REALITY_PASSWORD" "$(openssl rand -hex 16)"
+    set_env_default "PRISM_SHADOWTLS_PASSWORD" "$(openssl rand -hex 16)"
+
+    if ! grep -q "PRISM_ENABLE_" "${SECRETS_FILE}"; then
+        set_env_default "PRISM_ENABLE_REALITY_VISION" "true"
+        set_env_default "PRISM_ENABLE_HY2" "true"
+        set_env_default "PRISM_ENABLE_TUIC" "true"
+        
+        set_env_default "PRISM_ENABLE_REALITY_GRPC" "false"
+        set_env_default "PRISM_ENABLE_ANYTLS" "false"
+        set_env_default "PRISM_ENABLE_ANYTLS_REALITY" "false"
+        set_env_default "PRISM_ENABLE_SHADOWTLS" "false"
+    fi
+
+    set_env_default "PRISM_OUTBOUND_MODE" "prefer_ipv4"
+    
+    source "${SECRETS_FILE}"
 }
 
 gen_log_config() {
