@@ -12,6 +12,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+#!/usr/bin/env bash
+# modules/config.sh - Updated with Shadowsocks-2022 over ShadowTLS
+
 source "${BASE_DIR}/core/env.sh"
 source "${BASE_DIR}/core/log.sh"
 source "${BASE_DIR}/core/ui.sh"
@@ -88,6 +91,11 @@ manage_secrets() {
     set_env_default "PRISM_TUIC_PASSWORD" "$(openssl rand -hex 8)"
     set_env_default "PRISM_ANYTLS_PASSWORD" "$(openssl rand -hex 16)"
     set_env_default "PRISM_ANYTLS_REALITY_PASSWORD" "$(openssl rand -hex 16)"
+    
+    if [[ -z "${PRISM_SS_PASSWORD}" ]]; then
+        local ss_key=$(openssl rand -base64 16)
+        set_env_default "PRISM_SS_PASSWORD" "$ss_key"
+    fi
     set_env_default "PRISM_SHADOWTLS_PASSWORD" "$(openssl rand -hex 16)"
 
     if ! grep -q "PRISM_ENABLE_" "${SECRETS_FILE}"; then
@@ -273,7 +281,6 @@ EOF
     if [[ "${PRISM_ENABLE_ANYTLS:-}" == "true" ]]; then
         local cert_info=$(get_cert_paths "${PRISM_ANYTLS_CERT_MODE:-self_signed}")
         local crt_path=$(echo "$cert_info" | cut -d'|' -f1); local key_path=$(echo "$cert_info" | cut -d'|' -f2)
-        
         cat > "${PARTS_DIR}/04_inbounds_anytls.json" <<EOF
 { 
   "inbounds": [{ 
@@ -322,7 +329,28 @@ EOF
 
     if [[ "${PRISM_ENABLE_SHADOWTLS:-}" == "true" ]]; then
         cat > "${PARTS_DIR}/04_inbounds_shadowtls.json" <<EOF
-{ "inbounds": [ { "type": "shadowtls", "tag": "shadowtls-in", "listen": "::", "listen_port": ${PRISM_PORT_SHADOWTLS:-30443}, "version": 3, "users": [{ "password": "${PRISM_SHADOWTLS_PASSWORD}" }], "handshake": { "server": "${PRISM_DEST}", "server_port": 443 }, "detour": "vless-inner" }, { "type": "vless", "tag": "vless-inner", "listen": "127.0.0.1", "listen_port": ${PRISM_PORT_INNER_VLESS:-40443}, "users": [{ "uuid": "${PRISM_UUID}" }] } ] }
+{ 
+  "inbounds": [ 
+    { 
+      "type": "shadowtls", 
+      "tag": "shadowtls-in", 
+      "listen": "::", 
+      "listen_port": ${PRISM_PORT_SHADOWTLS:-30443}, 
+      "version": 3, 
+      "users": [{ "password": "${PRISM_SHADOWTLS_PASSWORD}" }], 
+      "handshake": { "server": "${PRISM_DEST}", "server_port": 443 }, 
+      "detour": "ss-inner" 
+    }, 
+    { 
+      "type": "shadowsocks", 
+      "tag": "ss-inner", 
+      "listen": "127.0.0.1", 
+      "listen_port": ${PRISM_PORT_INNER_VLESS:-40443}, 
+      "method": "2022-blake3-aes-128-gcm", 
+      "password": "${PRISM_SS_PASSWORD}" 
+    } 
+  ] 
+}
 EOF
     fi
 
