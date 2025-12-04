@@ -151,6 +151,8 @@ menu_warp_sub() {
         echo -e "  ${P}3.${N} ${W}設置 WARP 全局${N}   ${global_status}"
         echo -e "  ${P}4.${N} ${R}卸載 WARP 分流${N}"
         echo -e "${SEP}"
+        echo -e "  ${P}0.${N} 返回上級菜單"
+        echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r sub_c
         case "$sub_c" in
             1) manage_rule_file "warp.list" "WARP" "view" ;;
@@ -161,6 +163,7 @@ menu_warp_sub() {
         esac
     done
 }
+
 menu_ipv6_sub() {
     while true; do
         clear; print_banner
@@ -173,6 +176,8 @@ menu_ipv6_sub() {
         echo -e "  ${P}3.${N} ${W}設置 IPv6 全局${N}    ${global_status}"
         echo -e "  ${P}4.${N} ${R}卸載 IPv6 分流${N}"
         echo -e "${SEP}"
+        echo -e "  ${P}0.${N} 返回上級菜單"
+        echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r sub_c
         case "$sub_c" in
             1) manage_rule_file "ipv6.list" "IPv6" "view" ;;
@@ -183,6 +188,7 @@ menu_ipv6_sub() {
         esac
     done
 }
+
 menu_socks5_out_sub() {
     while true; do
         clear; print_banner
@@ -197,6 +203,8 @@ menu_socks5_out_sub() {
         echo -e "  ${P}3.${N} ${W}分流規則管理${N}"
         echo -e "  ${P}4.${N} ${R}卸載 Socks5 出站${N}"
         echo -e "${SEP}"
+        echo -e "  ${P}0.${N} 返回上級菜單"
+        echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r sub_c
         case "$sub_c" in
             1) echo ""; while true; do read -p "請輸入落地機 IP (回車 127.0.0.1): " ip; ip=${ip:-127.0.0.1}; if is_valid_ip "$ip"; then break; else error "IP 格式錯誤"; fi; done; while true; do read -p "請輸入落地機端口 (回車 1080): " pt; pt=${pt:-1080}; if is_valid_port "$pt"; then break; else error "端口無效 (1-65535)"; fi; done; read -p "請輸入 用戶名 (回車空): " u; read -p "請輸入 密碼 (回車空): " p; write_secret_no_apply "PRISM_SOCKS5_OUT_ENABLE" "true"; write_secret_no_apply "PRISM_SOCKS5_OUT_IP" "${ip}"; write_secret_no_apply "PRISM_SOCKS5_OUT_PORT" "${pt}"; write_secret_no_apply "PRISM_SOCKS5_OUT_USER" "${u}"; write_secret_no_apply "PRISM_SOCKS5_OUT_PASS" "${p}"; apply_routing_changes ;;
@@ -207,6 +215,7 @@ menu_socks5_out_sub() {
         esac
     done
 }
+
 menu_socks5_in_sub() {
     while true; do
         clear; print_banner
@@ -219,6 +228,8 @@ menu_socks5_in_sub() {
         echo -e "  ${P}3.${N} ${W}查看入站信息${N}"
         echo -e "  ${P}4.${N} ${R}卸載 Socks5 入站${N}"
         echo -e "${SEP}"
+        echo -e "  ${P}0.${N} 返回上級菜單"
+        echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r sub_c
         case "$sub_c" in
             1) echo ""; while true; do read -p "端口 (回車隨機): " pt; pt=${pt:-$((RANDOM % 10000 + 20000))}; if is_valid_port "$pt"; then break; else error "端口無效"; fi; done; read -p "User (回車 prism): " u; u=${u:-prism}; read -p "Pass (回車隨機): " p; if [[ -z "$p" ]]; then p=$(openssl rand -hex 8); fi; write_secret_no_apply "PRISM_SOCKS5_IN_ENABLE" "true"; write_secret_no_apply "PRISM_SOCKS5_IN_PORT" "${pt}"; write_secret_no_apply "PRISM_SOCKS5_IN_USER" "${u}"; write_secret_no_apply "PRISM_SOCKS5_IN_PASS" "${p}"; apply_routing_changes ;;
@@ -229,6 +240,7 @@ menu_socks5_in_sub() {
         esac
     done
 }
+
 menu_dns_sub() {
     while true; do
         clear; print_banner
@@ -236,6 +248,8 @@ menu_dns_sub() {
         echo -e "${SEP}"
         echo -e "  ${P}1.${N} ${W}添加 DNS 分流規則${N}"
         echo -e "  ${P}2.${N} ${R}卸載 DNS 分流${N}"
+        echo -e "${SEP}"
+        echo -e "  ${P}0.${N} 返回上級菜單"
         echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r choice
         case "$choice" in
@@ -253,6 +267,8 @@ menu_sni_sub() {
         echo -e "${SEP}"
         echo -e "  ${P}1.${N} ${W}添加 SNI 分流規則${N}"
         echo -e "  ${P}2.${N} ${R}卸載 SNI 分流${N}"
+        echo -e "${SEP}"
+        echo -e "  ${P}0.${N} 返回上級菜單"
         echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r choice
         case "$choice" in
