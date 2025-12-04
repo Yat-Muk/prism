@@ -49,7 +49,7 @@ check_env() {
     fi
     
     echo_info "檢查基礎依賴..."
-    local deps="wget curl tar"
+    local deps="wget curl tar jq"
     local install_cmd=""
     
     if command -v apt-get &> /dev/null; then
@@ -89,13 +89,13 @@ download_files() {
     done
     
     for file in "${MODULE_FILES[@]}"; do
-        if ! wget -q -O "${INSTALL_DIR}/${file}" "${REPO_URL}/${file}"; then
+        if ! wget -q -O "${INSTALL_DIR}/${file}" "${REPO_URL}/${file}?t=${ts}"; then
             echo_err "下載失敗: ${file}"
             exit 1
         fi
     done
     
-    wget -q -O "${INSTALL_DIR}/install.sh" "${REPO_URL}/install.sh"
+    wget -q -O "${INSTALL_DIR}/install.sh" "${REPO_URL}/install.sh?t=${ts}"
     chmod +x "${INSTALL_DIR}/install.sh"
     
     echo_ok "核心組件下載完成"
