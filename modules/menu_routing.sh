@@ -253,7 +253,23 @@ menu_dns_sub() {
         echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r choice
         case "$choice" in
-            1) echo ""; while true; do read -p "DNS IP (如 8.8.8.8): " dip; if is_valid_ip "$dip"; then break; else error "無效 IP"; fi; done; read -p "域名 (逗號分隔): " dlist; local clean_domains=$(sanitize_domain_list "$dlist"); if [[ -n "$clean_domains" ]]; then write_secret_no_apply "PRISM_DNS_ENABLE" "true"; write_secret_no_apply "PRISM_DNS_IP" "${dip}"; echo "$clean_domains" | tr ',' '\n' > "${RULE_DIR}/dns.list"; apply_routing_changes; else warn "域名為空"; sleep 1; fi ;;
+            1) echo ""; echo -e "${D}功能說明：將特定域名的 IP 強制解析為指定的反代 IP${N}"
+                while true; do
+                    read -p "反代 IP (例如 Netflix 解鎖 IP，輸入 0 取消): " sip
+                    if [[ "$sip" == "0" ]]; then continue 2; fi 
+                    
+                    if is_valid_ip "$sip"; then break; else error "無效 IP"; fi
+                done
+                read -p "域名 (逗號分隔): " slist
+                local clean_domains=$(sanitize_domain_list "$slist")
+                
+                if [[ -n "$clean_domains" ]]; then
+                    write_secret_no_apply "PRISM_SNI_ENABLE" "true"
+                    write_secret_no_apply "PRISM_SNI_IP" "${sip}"
+                    echo "$clean_domains" | tr ',' '\n' > "${RULE_DIR}/sni.list"
+                    apply_routing_changes
+                else warn "域名為空"; sleep 1; fi
+                ;;
             2) write_secret_no_apply "PRISM_DNS_ENABLE" "false"; rm -f "${RULE_DIR}/dns.list"; apply_routing_changes; break ;;
             0) break ;;
         esac
