@@ -13,7 +13,6 @@
 # GNU General Public License for more details.
 
 export PROJECT_NAME="Prism"
-export PROJECT_VERSION="v2.0.5"
 export PROJECT_AUTHOR="Yat-Muk"
 export PROJECT_URL="https://github.com/Yat-Muk/prism"
 
@@ -35,5 +34,11 @@ export OS_VERSION=""
 export PKG_MANAGER="" 
 export PKG_UPDATE_CMD=""
 export PKG_INSTALL_CMD=""
+
+if [[ -f "${WORK_DIR}/version.txt" ]]; then
+    export PROJECT_VERSION=$(head -n 1 "${WORK_DIR}/version")
+else
+    export PROJECT_VERSION="v2.0.4"
+fi
 
 mkdir -p "${WORK_DIR}" "${CONFIG_DIR}" "${TEMP_DIR}" "${GEO_DIR}" "${CERT_DIR}" "${ACME_CERT_DIR}" "${RULE_DIR}"
