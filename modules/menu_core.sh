@@ -22,56 +22,80 @@ else
     echo -e "${R}[Err] 內核模塊丟失 (Kernel module missing)${N}"
 fi
 
+_render_core_menu() {
+    local cur=$1
+    local stable=$2
+    local beta=$3
+    
+    clear; print_banner
+    echo -e " ${B}>>> 核心管理 (Core Management)${N}"
+    echo -e "${SEP}"
+    echo -e " 當前版本: ${cur}"
+    echo -e " 最新正式: ${stable}"
+    echo -e " 最新預覽: ${beta}"
+    echo -e "${SEP}"
+    echo -e "  ${P}1.${N} ${W}安裝/更新 正式版${N}"
+    echo -e "  ${P}2.${N} ${W}安裝/更新 預覽版 (Pre-release)${N}"
+    echo -e "  ${P}3.${N} ${W}安裝 指定版本${N}"
+    echo -e "${SEP}"
+    echo -e "  ${P}0.${N} 返回上級菜單"
+    echo -e "${SEP}"
+}
+
 submenu_core_upgrade() {
+    local local_ver_display="${D}檢測中...${N}"
+    local remote_stable_display="${D}獲取中...${N}"
+    local remote_beta_display="${D}獲取中...${N}"
+    
+    local raw_stable="N/A"
+    local raw_beta="N/A"
+
+    _render_core_menu "$local_ver_display" "$remote_stable_display" "$remote_beta_display"
+    
+    if [[ -f "${SINGBOX_BIN}" ]]; then
+        local v=$(${SINGBOX_BIN} version 2>/dev/null | grep "sing-box version" | awk '{print $3}')
+        local_ver_display="${C}${v}${N}"
+    else
+        local_ver_display="${D}未安裝${N}"
+    fi
+    
+    raw_stable=$(get_remote_version "release")
+    raw_beta=$(get_remote_version "prerelease")
+
+    if [[ "$raw_stable" != "N/A" ]]; then remote_stable_display="${G}${raw_stable}${N}"; else remote_stable_display="${R}失敗${N}"; fi
+    if [[ "$raw_beta" != "N/A" ]]; then remote_beta_display="${Y}${raw_beta}${N}"; else remote_beta_display="${R}失敗${N}"; fi
+
     while true; do
-        clear; print_banner
-        echo -e " ${B}>>> 核心管理 (Core Management)${N}"
-        echo -e "${SEP}"
+        _render_core_menu "$local_ver_display" "$remote_stable_display" "$remote_beta_display"
         
-        echo -ne " 正在獲取版本信息..."
-        local current_ver="未安裝"
-        if [[ -f "${SINGBOX_BIN}" ]]; then
-            current_ver=$(${SINGBOX_BIN} version 2>/dev/null | grep "sing-box version" | awk '{print $3}')
-        fi
-        
-        local latest_stable=$(get_remote_version "release")
-        local latest_beta=$(get_remote_version "prerelease")
-        
-        printf "\r\033[K"
-        
-        echo -e " 當前版本: ${C}${current_ver}${N}"
-        echo -e " 最新正式: ${G}${latest_stable}${N}"
-        echo -e " 最新預覽: ${Y}${latest_beta}${N}"
-        echo -e "${SEP}"
-        echo -e "  ${P}1.${N} ${W}安裝/更新 正式版${N}"
-        echo -e "  ${P}2.${N} ${W}安裝/更新 預覽版 (Pre-release)${N}"
-        echo -e "  ${P}3.${N} ${W}安裝 指定版本${N}"
-        echo -e "${SEP}"
-        echo -e "  ${P}0.${N} 返回上級菜單"
-        echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r choice
         
         case "$choice" in
             1) 
-                if [[ "$latest_stable" == "N/A" ]]; then error "無法獲取版本"; sleep 1; continue; fi
-                install_singbox_core "${latest_stable}" || true
-                read -p "按回車繼續..." 
+                if [[ "$raw_stable" == "N/A" ]]; then error "無法獲取版本信息"; sleep 1; continue; fi
+                install_singbox_core "${raw_stable}" || true
+                
+                local_ver_display="${C}${raw_stable}${N}"
+                read -p " 按回車繼續..." 
                 ;;
             2) 
-                if [[ "$latest_beta" == "N/A" ]]; then error "無法獲取版本"; sleep 1; continue; fi
-                install_singbox_core "${latest_beta}" || true
-                read -p "按回車繼續..." 
+                if [[ "$raw_beta" == "N/A" ]]; then error "無法獲取版本信息"; sleep 1; continue; fi
+                install_singbox_core "${raw_beta}" || true
+                
+                local_ver_display="${C}${raw_beta}${N}"
+                read -p " 按回車繼續..." 
                 ;;
             3) 
                 echo ""
-                read -p "請輸入版本號 (如 v1.12.0，輸入 0 取消): " input_ver
+                read -p " 請輸入版本號 (如 v1.12.0，輸入 0 取消): " input_ver
                 if [[ "$input_ver" == "0" ]]; then continue; fi
                 if [[ -n "$input_ver" ]]; then
                     install_singbox_core "${input_ver}" || true
+                    local_ver_display="${C}${input_ver}${N}"
                 else
                     warn "輸入為空"
                 fi
-                read -p "按回車繼續..." 
+                read -p " 按回車繼續..." 
                 ;;
             0) break ;;
             *) error "無效輸入"; sleep 1 ;;
@@ -148,7 +172,6 @@ perform_script_update() {
             chmod +x "${BASE_DIR}/install.sh"
             success "安裝器更新成功，正在執行全量更新..."
             sleep 1
-            
             exec bash "${BASE_DIR}/install.sh" update
         else
             error "下載失敗 (wget error)"
@@ -171,7 +194,7 @@ submenu_core() {
         echo -ne " 請輸入選項: "; read -r choice
         case "$choice" in
             1) submenu_core_upgrade ;;
-            2) check_script_update; break ;;
+            2) check_script_update; break ;; 
             0) break ;;
             *) error "無效輸入"; sleep 1 ;;
         esac
