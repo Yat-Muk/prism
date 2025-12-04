@@ -65,7 +65,7 @@ show_node_info() {
         p_kv "UUID (用戶ID)"       "${PRISM_UUID}"
         p_kv "Flow (流控)"         "xtls-rprx-vision"
         p_kv "Network (傳輸)"      "tcp"
-        p_kv "SNI (偽裝域名)"      "${PRISM_DEST}"
+        p_kv "SNI (偽裝域名)"       "${PRISM_DEST}"
         p_kv "Fingerprint (指紋)"  "chrome"
         p_kv "PublicKey (公鑰)"    "${PRISM_PUBLIC_KEY}"
         p_kv "ShortID (簡碼)"      "${PRISM_SHORT_ID}"
@@ -84,8 +84,8 @@ show_node_info() {
         p_kv "Port (端口)"         "${Y}${PRISM_PORT_REALITY_GRPC}${N}"
         p_kv "UUID (用戶ID)"       "${PRISM_UUID}"
         p_kv "Network (傳輸)"      "grpc"
-        p_kv "ServiceName (服務名)" "grpc"
-        p_kv "SNI (偽裝域名)"      "${PRISM_DEST}"
+        p_kv "ServiceName (服務名)"  "grpc"
+        p_kv "SNI (偽裝域名)"        "${PRISM_DEST}"
         p_kv "PublicKey (公鑰)"    "${PRISM_PUBLIC_KEY}"
         p_kv "ShortID (簡碼)"      "${PRISM_SHORT_ID}"
         
@@ -118,9 +118,9 @@ show_node_info() {
             cert_status="${G}ACME 證書 (安全)${N}"
         fi
         
-        p_kv "SNI (偽裝域名)"      "${sni}"
+        p_kv "SNI (偽裝域名)"        "${sni}"
         p_kv "Cert Mode (證書)"    "${cert_status}"
-        p_kv "Insecure (跳過驗證)" "${insecure}"
+        p_kv "Insecure (跳過驗證)"   "${insecure}"
 
         local link="hysteria2://${PRISM_HY2_PASSWORD}@${ip}:${PRISM_PORT_HY2}?insecure=${insecure}&sni=${sni}#Prism_Hy2"
         echo -e " ${D}-------------------------------------------------------${N}"
@@ -153,7 +153,7 @@ show_node_info() {
             insecure="0"
             cert_status="${G}ACME 證書 (安全)${N}"
         fi
-        p_kv "SNI (偽裝域名)"      "${sni}"
+        p_kv "SNI (偽裝域名)"        "${sni}"
         p_kv "Cert Mode (證書)"    "${cert_status}"
 
         local link="tuic://${PRISM_TUIC_UUID}:${PRISM_TUIC_PASSWORD}@${ip}:${PRISM_PORT_TUIC}?congestion_control=bbr&udp_relay_mode=native&allow_insecure=${insecure}&sni=${sni}#Prism_TUIC"
@@ -191,7 +191,7 @@ show_node_info() {
         p_kv "Address (地址)"      "${Y}${ip}${N}"
         p_kv "Port (端口)"         "${Y}${PRISM_PORT_ANYTLS_REALITY}${N}"
         p_kv "Password (密碼)"     "${PRISM_ANYTLS_REALITY_PASSWORD}"
-        p_kv "SNI (偽裝域名)"      "${PRISM_DEST}"
+        p_kv "SNI (偽裝域名)"        "${PRISM_DEST}"
         p_kv "PublicKey (公鑰)"    "${PRISM_PUBLIC_KEY}"
         p_kv "ShortID (簡碼)"      "${PRISM_SHORT_ID}"
         p_kv "Fingerprint (指紋)"  "chrome"
