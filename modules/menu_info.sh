@@ -98,7 +98,10 @@ display_links_and_qr() {
         ((node_count++))
         echo -e " ${G}${node_count}. Hysteria 2${N} ${D}[UDP]${N}"
         p_kv "Address (地址)"      "${Y}${ip}${N}"
-        local port_display="${PRISM_PORT_HY2}"; if [[ -n "${PRISM_HY2_PORT_HOPPING}" ]]; then port_display="${PRISM_PORT_HY2} (跳躍: ${PRISM_HY2_PORT_HOPPING})"; fi
+        local port_display="${PRISM_PORT_HY2}"
+        if [[ -n "${PRISM_HY2_PORT_HOPPING}" ]]; then
+            port_display="${PRISM_PORT_HY2} (跳躍: ${PRISM_HY2_PORT_HOPPING//-/:})"
+        fi
         p_kv "Port (端口)"         "${Y}${port_display}${N}"
         p_kv "Auth (認證類型)"     "password"
         p_kv "Password (密碼)"     "${W}${PRISM_HY2_PASSWORD}${N}"
@@ -122,7 +125,10 @@ display_links_and_qr() {
         ((node_count++))
         echo -e " ${G}${node_count}. TUIC v5${N} ${D}[QUIC]${N}"
         p_kv "Address (地址)"      "${Y}${ip}${N}"
-        local port_display="${PRISM_PORT_TUIC}"; if [[ -n "${PRISM_TUIC_PORT_HOPPING}" ]]; then port_display="${PRISM_PORT_TUIC} (跳躍: ${PRISM_TUIC_PORT_HOPPING})"; fi
+        local port_display="${PRISM_PORT_TUIC}"
+        if [[ -n "${PRISM_TUIC_PORT_HOPPING}" ]]; then
+            port_display="${PRISM_PORT_TUIC} (跳躍: ${PRISM_TUIC_PORT_HOPPING//-/:})"
+        fi
         p_kv "Port (端口)"         "${Y}${port_display}${N}"
         p_kv "UUID (用戶ID)"       "${W}${PRISM_TUIC_UUID}${N}"
         p_kv "Password (密碼)"     "${W}${PRISM_TUIC_PASSWORD}${N}"
@@ -235,6 +241,10 @@ generate_json_outbound_object() {
         "grpc")
             echo "{ \"type\": \"vless\", \"tag\": \"gRPC\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_REALITY_GRPC}, \"uuid\": \"${PRISM_UUID}\", \"transport\": { \"type\": \"grpc\", \"service_name\": \"grpc\" }, \"tls\": { \"enabled\": true, \"server_name\": \"${PRISM_DEST}\", \"utls\": { \"enabled\": true, \"fingerprint\": \"chrome\" }, \"reality\": { \"enabled\": true, \"public_key\": \"${PRISM_PUBLIC_KEY}\", \"short_id\": \"${PRISM_SHORT_ID}\" } } }" ;;
         "hy2")
+            local hy2_port_val=${PRISM_PORT_HY2}
+            if [[ -n "${PRISM_HY2_PORT_HOPPING}" ]]; then
+                hy2_port_val="\"${PRISM_HY2_PORT_HOPPING//-/:}\""
+            fi
             echo "{ \"type\": \"hysteria2\", \"tag\": \"Hy2\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_HY2}, \"password\": \"${PRISM_HY2_PASSWORD}\", \"tls\": { \"enabled\": true, \"server_name\": \"${sni_hy2}\", \"insecure\": ${insecure_hy2}, \"alpn\": [\"h3\"] } }" ;;
         "tuic")
             echo "{ \"type\": \"tuic\", \"tag\": \"TUIC\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_TUIC}, \"uuid\": \"${PRISM_TUIC_UUID}\", \"password\": \"${PRISM_TUIC_PASSWORD}\", \"congestion_control\": \"bbr\", \"udp_relay_mode\": \"native\", \"tls\": { \"enabled\": true, \"server_name\": \"${sni_tuic}\", \"insecure\": ${insecure_tuic}, \"alpn\": [\"h3\"] } }" ;;
