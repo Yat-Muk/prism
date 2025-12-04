@@ -83,6 +83,80 @@ submenu_core_upgrade() {
     done
 }
 
+check_script_update() {
+    clear; print_banner
+    echo -e " ${B}>>> 檢查腳本更新${N}"
+    echo -e "================================================="
+    echo -e " 正在獲取版本信息..."
+    
+    local ts=$(date +%s)
+    local version_url="https://raw.githubusercontent.com/Yat-Muk/prism/main/version?t=${ts}"
+    local temp_version_file="/tmp/prism_version_check.txt"
+    
+    if ! curl -sL --max-time 5 -o "$temp_version_file" "$version_url"; then
+        error "無法連接到 GitHub，請檢查網絡。"
+        read -p "按回車返回..."
+        return
+    fi
+    
+    local remote_ver=$(head -n 1 "$temp_version_file")
+    local changelog=$(tail -n +2 "$temp_version_file")
+    
+    echo -e " 當前版本: ${C}${PROJECT_VERSION}${N}"
+    echo -e " 最新版本: ${G}${remote_ver:-未知}${N}"
+    echo -e "-------------------------------------------------"
+    
+    if [[ -z "$remote_ver" ]]; then
+        warn "未能獲取到有效的版本號。"
+    else
+        echo -e " ${Y}更新內容 (Changelog):${N}"
+        echo -e "${changelog}"
+        echo -e "-------------------------------------------------"
+    fi
+    
+    if [[ "$remote_ver" == "$PROJECT_VERSION" ]]; then
+        echo -e " ${G}當前已是最新版本。${N}"
+        echo -ne " 是否強制重新安裝? [y/N]: "; read -r force_opt
+        if [[ "$force_opt" != "y" && "$force_opt" != "Y" ]]; then return; fi
+    else
+        echo -ne " ${P}是否立即更新腳本? [y/N]: ${N}"; read -r update_opt
+        if [[ "$update_opt" != "y" && "$update_opt" != "Y" ]]; then 
+            info "已取消更新。"
+            read -p "按回車返回..."
+            return
+        fi
+    fi
+    
+    perform_script_update
+}
+
+perform_script_update() {
+    echo ""
+    info "正在獲取最新 Prism 安裝器..."
+    
+    if [ -d "${BASE_DIR}/.git" ]; then
+        echo -e "${Y}[Dev] 檢測到 Git 環境，嘗試 git pull...${N}"
+        git -C "${BASE_DIR}" pull || true
+        success "Git 更新完成，請重新運行"
+        exit 0
+    else
+        local ts=$(date +%s)
+        local update_url="https://raw.githubusercontent.com/Yat-Muk/prism/main/install.sh?t=${ts}"
+        
+        if wget -q -O "${BASE_DIR}/install.sh" "${update_url}"; then
+            chmod +x "${BASE_DIR}/install.sh"
+            success "引導腳本下載成功，正在執行全量更新..."
+            sleep 1
+            
+            bash "${BASE_DIR}/install.sh" update
+            exit 0
+        else
+            error "下載失敗，請檢查網絡連接 (GitHub Raw)"
+            read -p "按回車返回..."
+        fi
+    fi
+}
+
 submenu_core() {
     while true; do
         clear; print_banner
@@ -95,34 +169,7 @@ submenu_core() {
         echo -ne " 請輸入選項: "; read -r choice
         case "$choice" in
             1) submenu_core_upgrade ;;
-            2) 
-                echo ""
-                info "正在更新 Prism 腳本..."
-
-                if [ -d "${BASE_DIR}/.git" ]; then
-                    echo -e "${Y}[Dev] 檢測到 Git 環境，嘗試 git pull...${N}"
-                    git -C "${BASE_DIR}" pull || true
-                    success "Git 更新完成，請重新運行"
-                    exit 0
-                else
-
-                    local ts=$(date +%s)
-                    local update_url="https://raw.githubusercontent.com/Yat-Muk/prism/main/install.sh?t=${ts}"
-                    
-                    if wget -q -O "${BASE_DIR}/install.sh" "${update_url}"; then
-                        chmod +x "${BASE_DIR}/install.sh"
-                        success "引導腳本下載成功，正在執行全量更新..."
-                        sleep 1
-
-                        bash "${BASE_DIR}/install.sh" update
-
-                        exit 0
-                    else
-                        error "下載失敗，請檢查網絡連接 (GitHub Raw)"
-                    fi
-                fi
-                read -p "按回車返回..." 
-                ;;
+            2) check_script_update ;;
             0) break ;;
             *) error "無效輸入"; sleep 1 ;;
         esac
