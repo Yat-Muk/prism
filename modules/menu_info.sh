@@ -28,7 +28,7 @@ print_qr_block() {
 }
 
 p_kv() {
-    local key="$1"; local val="$2"; local width=28
+    local key="$1"; local val="$2"; local width=20
     local padding=$(awk -v str="$key" -v w="$width" 'BEGIN {
         len = length(str); non_ascii = 0;
         for(i=1; i<=len; i++) { if(substr(str,i,1) ~ /[^\x00-\x7F]/) non_ascii++; }
@@ -66,6 +66,7 @@ display_links_and_qr() {
         p_kv "Fingerprint (指紋)"  "chrome"
         p_kv "PublicKey (公鑰)"    "${Y}${PRISM_PUBLIC_KEY}${N}"
         p_kv "ShortID (簡碼)"      "${PRISM_SHORT_ID}"
+        echo -e "${D}  ------------------------------------${N}"
         local link="vless://${PRISM_UUID}@${ip_url}:${PRISM_PORT_REALITY_VISION}?security=reality&encryption=none&pbk=${PRISM_PUBLIC_KEY}&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=${PRISM_DEST}&sid=${PRISM_SHORT_ID}#Prism_Vision"
         echo -e "${W}${link}${N}"; print_qr_block "${link}" "Vision"; echo -e "${SEP}"
         LINK_POOL+=("$link")
@@ -81,6 +82,7 @@ display_links_and_qr() {
         p_kv "SNI (偽裝域名)"      "${W}${PRISM_DEST}${N}"
         p_kv "PublicKey (公鑰)"    "${Y}${PRISM_PUBLIC_KEY}${N}"
         p_kv "ShortID (簡碼)"      "${PRISM_SHORT_ID}"
+        echo -e "${D}  ------------------------------------${N}"
         local link="vless://${PRISM_UUID}@${ip_url}:${PRISM_PORT_REALITY_GRPC}?security=reality&encryption=none&pbk=${PRISM_PUBLIC_KEY}&fp=chrome&type=grpc&serviceName=grpc&sni=${PRISM_DEST}&sid=${PRISM_SHORT_ID}#Prism_gRPC"
         echo -e "${W}${link}${N}"; print_qr_block "${link}" "gRPC"; echo -e "${SEP}"
         LINK_POOL+=("$link")
@@ -98,6 +100,7 @@ display_links_and_qr() {
         p_kv "SNI (偽裝域名)"      "${W}${sni}${N}"
         p_kv "Cert Mode (證書)"    "${cert_status}"
         p_kv "Insecure (跳過驗證)"       "${insecure_display}"
+        echo -e "${D}  ------------------------------------${N}"
         local link="hysteria2://${PRISM_HY2_PASSWORD}@${ip_url}:${PRISM_PORT_HY2}?insecure=${insecure_val}&sni=${sni}#Prism_Hy2"
         echo -e "${W}${link}${N}"; print_qr_block "${link}" "Hy2"; echo -e "${SEP}"
         LINK_POOL+=("$link")
@@ -116,6 +119,7 @@ display_links_and_qr() {
         p_kv "SNI (偽裝域名)"      "${W}${sni}${N}"
         p_kv "Cert Mode (證書)"    "${cert_status}"
         p_kv "Insecure (跳過驗證)"       "${insecure_display}"
+        echo -e "${D}  ------------------------------------${N}"
         local link="tuic://${PRISM_TUIC_UUID}:${PRISM_TUIC_PASSWORD}@${ip_url}:${PRISM_PORT_TUIC}?congestion_control=bbr&udp_relay_mode=native&allow_insecure=${insecure_val}&sni=${sni}#Prism_TUIC"
         echo -e "${W}${link}${N}"; print_qr_block "${link}" "TUIC"; echo -e "${SEP}"
         LINK_POOL+=("$link")
@@ -131,6 +135,7 @@ display_links_and_qr() {
         if [[ "${PRISM_ANYTLS_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then sni="${PRISM_ACME_DOMAIN}"; insecure_val="0"; insecure_display="${G}False${N}"; fi
         p_kv "SNI (偽裝域名)"      "${W}${sni}${N}"
         p_kv "Insecure (跳過驗證)"       "${insecure_display}"
+        echo -e "${D}  ------------------------------------${N}"
         local link="anytls://prism:${PRISM_ANYTLS_PASSWORD}@${ip_url}:${PRISM_PORT_ANYTLS}?sni=${sni}&insecure=${insecure_val}#Prism_AnyTLS"
         echo -e "${W}${link}${N}"; print_qr_block "${link}" "AnyTLS"; echo -e "${SEP}"
         LINK_POOL+=("$link")
@@ -145,6 +150,7 @@ display_links_and_qr() {
         p_kv "SNI (偽裝域名)"      "${W}${PRISM_DEST}${N}"
         p_kv "PublicKey (公鑰)"    "${Y}${PRISM_PUBLIC_KEY}${N}"
         p_kv "ShortID (簡碼)"      "${PRISM_SHORT_ID}"
+        echo -e "${D}  ------------------------------------${N}"
         local link="anytls://prism:${PRISM_ANYTLS_REALITY_PASSWORD}@${ip_url}:${PRISM_PORT_ANYTLS_REALITY}?security=reality&sni=${PRISM_DEST}&pbk=${PRISM_PUBLIC_KEY}&sid=${PRISM_SHORT_ID}&fingerprint=chrome#Prism_AnyReality"
         echo -e "${W}${link}${N}"; print_qr_block "${link}" "AnyReality"; echo -e "${SEP}"
         LINK_POOL+=("$link")
@@ -157,6 +163,7 @@ display_links_and_qr() {
         p_kv "Port (端口)"         "${Y}${PRISM_PORT_SHADOWTLS}${N}"
         p_kv "Password (密碼)"     "${W}${PRISM_SHADOWTLS_PASSWORD}${N}"
         p_kv "Handshake (握手域名)" "${W}${PRISM_DEST}${N}"
+        echo -e "${D}  ------------------------------------${N}"
         local link="vless://${PRISM_UUID}@${ip_url}:${PRISM_PORT_SHADOWTLS}?security=shadowtls&encryption=none&type=tcp&sni=${PRISM_DEST}&password=${PRISM_SHADOWTLS_PASSWORD}&version=3#Prism_ShadowTLS"
         echo -e "${W}${link}${N}"; print_qr_block "${link}" "ShadowTLS"; echo -e "${SEP}"
         LINK_POOL+=("$link")
@@ -300,8 +307,8 @@ show_node_info() {
         clear; print_banner
         echo -e " ${P}>>> 節點信息 (Node Information)${N}"
         echo -e "${SEP}"
-        echo -e "  ${P}1.${N} ${W}查看 鏈接 & 訂閱${N}    ${D}(Detailed Links & QR)${N}"
-        echo -e "  ${P}2.${N} ${W}獲取 客戶端配置${N}     ${D}(Aggregated JSON Config)${N}"
+        echo -e "  ${P}1.${N} ${W}查看 鏈接 & 訂閱${N}    ${D}(離線訂閱 & 二維碼)${N}"
+        echo -e "  ${P}2.${N} ${W}獲取 客戶端配置${N}     ${D}(JSON Config)${N}"
         echo -e "${SEP}"
         echo -e "  ${P}0.${N} 返回主菜單"
         echo -e "${SEP}"
