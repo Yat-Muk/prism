@@ -75,6 +75,10 @@ check_env() {
 download_files() {
     echo_info "正在從 GitHub 拉取最新代碼..."
     local ts=$(date +%s)
+
+    if ! wget -q -O "${INSTALL_DIR}/version" "${REPO_URL}/version?t=${ts}"; then
+        echo_err "警告: version 下載失敗"
+    fi
     
     for file in "${CORE_FILES[@]}"; do
         if ! wget -q -O "${INSTALL_DIR}/${file}" "${REPO_URL}/${file}?t=${ts}"; then
@@ -122,7 +126,7 @@ if [[ "$1" == "update" ]]; then
     register_shortcut
     echo_ok "更新完成，正在啟動..."
     sleep 1
-    start_prism
+    exec bash "${INSTALL_DIR}/install.sh"
     exit 0
 fi
 
