@@ -117,10 +117,15 @@ manage_rule_file() {
         clear; print_banner
         echo -e " ${P}>>> 添加規則: ${W}${rule_name}${N}"
         echo -e "${SEP}"
-        echo -e " ${Y}請輸入域名 (逗號分隔)${N}"
+        echo -e "${D}功能說明：批量添加域名到 ${rule_name} 規則列表${N}"
+        echo -e " ${Y}請輸入域名 (逗號分隔，輸入 0 取消)${N}"
         echo -e " ${D}示例: netflix.com, openai.com${N}"
         echo -e "${SEP}"
+        
         read -p " > " input_domains
+        
+        if [[ "$input_domains" == "0" ]]; then return; fi
+        
         local clean_domains=$(sanitize_domain_list "$input_domains")
         if [[ -n "$clean_domains" ]]; then
             echo "$clean_domains" | tr ',' '\n' | sed '/^$/d' >> "${file_path}"
@@ -207,7 +212,31 @@ menu_socks5_out_sub() {
         echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r sub_c
         case "$sub_c" in
-            1) echo ""; while true; do read -p "請輸入落地機 IP (回車 127.0.0.1): " ip; ip=${ip:-127.0.0.1}; if is_valid_ip "$ip"; then break; else error "IP 格式錯誤"; fi; done; while true; do read -p "請輸入落地機端口 (回車 1080): " pt; pt=${pt:-1080}; if is_valid_port "$pt"; then break; else error "端口無效 (1-65535)"; fi; done; read -p "請輸入 用戶名 (回車空): " u; read -p "請輸入 密碼 (回車空): " p; write_secret_no_apply "PRISM_SOCKS5_OUT_ENABLE" "true"; write_secret_no_apply "PRISM_SOCKS5_OUT_IP" "${ip}"; write_secret_no_apply "PRISM_SOCKS5_OUT_PORT" "${pt}"; write_secret_no_apply "PRISM_SOCKS5_OUT_USER" "${u}"; write_secret_no_apply "PRISM_SOCKS5_OUT_PASS" "${p}"; apply_routing_changes ;;
+            1) 
+                echo ""; echo -e "${D}功能說明：配置外部 Socks5 代理作為出站節點${N}"
+                while true; do 
+                    read -p "請輸入落地機 IP (回車 127.0.0.1，輸入 0 取消): " ip
+                    if [[ "$ip" == "0" ]]; then continue 2; fi
+                    ip=${ip:-127.0.0.1}
+                    if is_valid_ip "$ip"; then break; else error "IP 格式錯誤"; fi
+                done
+                
+                while true; do 
+                    read -p "請輸入落地機端口 (回車 1080): " pt
+                    pt=${pt:-1080}
+                    if is_valid_port "$pt"; then break; else error "端口無效 (1-65535)"; fi
+                done
+                
+                read -p "請輸入 用戶名 (回車空): " u
+                read -p "請輸入 密碼 (回車空): " p
+                
+                write_secret_no_apply "PRISM_SOCKS5_OUT_ENABLE" "true"
+                write_secret_no_apply "PRISM_SOCKS5_OUT_IP" "${ip}"
+                write_secret_no_apply "PRISM_SOCKS5_OUT_PORT" "${pt}"
+                write_secret_no_apply "PRISM_SOCKS5_OUT_USER" "${u}"
+                write_secret_no_apply "PRISM_SOCKS5_OUT_PASS" "${p}"
+                apply_routing_changes 
+                ;;
             2) if [[ "${PRISM_SOCKS5_OUT_ENABLE}" != "true" ]]; then error "請先配置 Socks5 出站"; sleep 1; continue; fi; local new_state="true"; if [[ "${PRISM_SOCKS5_OUT_GLOBAL:-}" == "true" ]]; then new_state="false"; fi; write_secret_no_apply "PRISM_SOCKS5_OUT_GLOBAL" "$new_state"; apply_routing_changes ;;
             3) echo -e "\n  ${P}1.${N} 查看規則\n  ${P}2.${N} 添加規則"; read -p " 選擇: " r_opt; if [[ "$r_opt" == "1" ]]; then manage_rule_file "socks5_out.list" "Socks5出站" "view"; fi; if [[ "$r_opt" == "2" ]]; then manage_rule_file "socks5_out.list" "Socks5出站" "add"; fi ;;
             4) write_secret_no_apply "PRISM_SOCKS5_OUT_ENABLE" "false"; write_secret_no_apply "PRISM_SOCKS5_OUT_GLOBAL" "false"; apply_routing_changes; break ;;
@@ -232,7 +261,24 @@ menu_socks5_in_sub() {
         echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r sub_c
         case "$sub_c" in
-            1) echo ""; while true; do read -p "端口 (回車隨機): " pt; pt=${pt:-$((RANDOM % 10000 + 20000))}; if is_valid_port "$pt"; then break; else error "端口無效"; fi; done; read -p "User (回車 prism): " u; u=${u:-prism}; read -p "Pass (回車隨機): " p; if [[ -z "$p" ]]; then p=$(openssl rand -hex 8); fi; write_secret_no_apply "PRISM_SOCKS5_IN_ENABLE" "true"; write_secret_no_apply "PRISM_SOCKS5_IN_PORT" "${pt}"; write_secret_no_apply "PRISM_SOCKS5_IN_USER" "${u}"; write_secret_no_apply "PRISM_SOCKS5_IN_PASS" "${p}"; apply_routing_changes ;;
+            1) 
+                echo ""; echo -e "${D}功能說明：開啟一個 Socks5 服務器供外部連接${N}"
+                while true; do 
+                    read -p "端口 (回車隨機，輸入 0 取消): " pt
+                    if [[ "$pt" == "0" ]]; then continue 2; fi
+                    pt=${pt:-$((RANDOM % 10000 + 20000))}
+                    if is_valid_port "$pt"; then break; else error "端口無效"; fi
+                done
+                
+                read -p "User (回車 prism): " u; u=${u:-prism}
+                read -p "Pass (回車隨機): " p; if [[ -z "$p" ]]; then p=$(openssl rand -hex 8); fi
+                
+                write_secret_no_apply "PRISM_SOCKS5_IN_ENABLE" "true"
+                write_secret_no_apply "PRISM_SOCKS5_IN_PORT" "${pt}"
+                write_secret_no_apply "PRISM_SOCKS5_IN_USER" "${u}"
+                write_secret_no_apply "PRISM_SOCKS5_IN_PASS" "${p}"
+                apply_routing_changes 
+                ;;
             2) echo -e "\n  ${P}1.${N} 查看規則\n  ${P}2.${N} 添加規則"; read -p " 選擇: " r_opt; if [[ "$r_opt" == "1" ]]; then manage_rule_file "socks5_in.list" "Socks5入站" "view"; fi; if [[ "$r_opt" == "2" ]]; then manage_rule_file "socks5_in.list" "Socks5入站" "add"; fi ;;
             3) if [[ "${PRISM_SOCKS5_IN_ENABLE}" == "true" ]]; then echo -e "\n ${G}Socks5 入站配置:${N}"; echo -e " 端口: ${Y}${PRISM_SOCKS5_IN_PORT}${N}"; echo -e " 用戶: ${Y}${PRISM_SOCKS5_IN_USER}${N}"; echo -e " 密碼: ${Y}${PRISM_SOCKS5_IN_PASS}${N}"; else warn "未安裝"; fi; read -p "按回車..." ;;
             4) write_secret_no_apply "PRISM_SOCKS5_IN_ENABLE" "false"; apply_routing_changes; break ;;
@@ -253,22 +299,22 @@ menu_dns_sub() {
         echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r choice
         case "$choice" in
-            1) echo ""; echo -e "${D}功能說明：將特定域名的 IP 強制解析為指定的反代 IP${N}"
-                while true; do
-                    read -p "反代 IP (例如 Netflix 解鎖 IP，輸入 0 取消): " sip
-                    if [[ "$sip" == "0" ]]; then continue 2; fi 
-                    
-                    if is_valid_ip "$sip"; then break; else error "無效 IP"; fi
+            1) 
+                echo ""; echo -e "${D}功能說明：將特定域名解析指向特定 DNS 服務器${N}"
+                while true; do 
+                    read -p "DNS IP (如 8.8.8.8，輸入 0 取消): " dip
+                    if [[ "$dip" == "0" ]]; then continue 2; fi
+                    if is_valid_ip "$dip"; then break; else error "無效 IP"; fi
                 done
-                read -p "域名 (逗號分隔): " slist
-                local clean_domains=$(sanitize_domain_list "$slist")
                 
-                if [[ -n "$clean_domains" ]]; then
-                    write_secret_no_apply "PRISM_SNI_ENABLE" "true"
-                    write_secret_no_apply "PRISM_SNI_IP" "${sip}"
-                    echo "$clean_domains" | tr ',' '\n' > "${RULE_DIR}/sni.list"
+                read -p "域名 (逗號分隔): " dlist
+                local clean_domains=$(sanitize_domain_list "$dlist")
+                if [[ -n "$clean_domains" ]]; then 
+                    write_secret_no_apply "PRISM_DNS_ENABLE" "true"
+                    write_secret_no_apply "PRISM_DNS_IP" "${dip}"
+                    echo "$clean_domains" | tr ',' '\n' > "${RULE_DIR}/dns.list"
                     apply_routing_changes
-                else warn "域名為空"; sleep 1; fi
+                else warn "域名為空"; sleep 1; fi 
                 ;;
             2) write_secret_no_apply "PRISM_DNS_ENABLE" "false"; rm -f "${RULE_DIR}/dns.list"; apply_routing_changes; break ;;
             0) break ;;
@@ -291,7 +337,8 @@ menu_sni_sub() {
             1) 
                 echo ""; echo -e "${D}功能說明：將特定域名的 IP 強制解析為指定的反代 IP${N}"
                 while true; do
-                    read -p "反代 IP (例如 Netflix 解鎖 IP): " sip
+                    read -p "反代 IP (例如 Netflix 解鎖 IP，輸入 0 取消): " sip
+                    if [[ "$sip" == "0" ]]; then continue 2; fi 
                     if is_valid_ip "$sip"; then break; else error "無效 IP"; fi
                 done
                 read -p "域名 (逗號分隔): " slist
