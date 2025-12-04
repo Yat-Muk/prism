@@ -382,18 +382,43 @@ EOF
 merge_configs() {
     local output_file="${CONFIG_DIR}/config.json"
     if ! command -v jq &> /dev/null; then error "缺少 jq 工具。"; exit 1; fi
+    
+    info "正在驗證配置片段..."
+    local has_error=false
+
+    for json_file in "${PARTS_DIR}"/*.json; do
+        if [[ -f "$json_file" ]]; then
+            if ! jq . "$json_file" >/dev/null 2>&1; then
+                error "配置片段校驗失敗: $(basename "$json_file")"
+                jq . "$json_file" || true
+                has_error=true
+            fi
+        fi
+    done
+
+    if [[ "$has_error" == "true" ]]; then
+        error "檢測到配置文件語法錯誤，終止合併以保護系統。"
+        return 1
+    fi
+
     export ENABLE_DEPRECATED_WIREGUARD_OUTBOUND=true
+    
     if jq -s 'reduce .[] as $item ({}; . * $item + 
         (if ($item | has("inbounds")) and (. | has("inbounds")) then {"inbounds": (.inbounds + $item.inbounds)} else {} end) +
         (if ($item | has("outbounds")) and (. | has("outbounds")) then {"outbounds": (.outbounds + $item.outbounds)} else {} end) +
         (if ($item | has("route")) and (. | has("route")) and ($item.route | has("rules")) and (.route | has("rules")) then {"route": {"rules": (.route.rules + $item.route.rules)}} else {} end)
-    )' ${PARTS_DIR}/*.json > "${output_file}"; then
-        success "配置文件已生成"
-        local check_out
-        if check_out=$(ENABLE_DEPRECATED_WIREGUARD_OUTBOUND=true ${SINGBOX_BIN} check -c "${output_file}" 2>&1); then success "配置驗證通過 (Valid)"; else error "配置驗證失敗！"; echo -e "${R}${check_out}${N}"; return 1; fi
-    else error "配置文件合併失敗"; exit 1; fi
-}
+    )' "${PARTS_DIR}"/*.json > "${output_file}"; then
 
-build_config() {
-    init_config_structure; manage_secrets; gen_log_config; gen_dns_config; gen_outbounds_config; gen_route_config; gen_inbounds_config; merge_configs
+        local check_out
+        if check_out=$(ENABLE_DEPRECATED_WIREGUARD_OUTBOUND=true ${SINGBOX_BIN} check -c "${output_file}" 2>&1); then 
+            success "配置生成並驗證通過 (Valid)"
+        else 
+            error "Sing-box 核心拒絕了該配置！"
+            echo -e "${R}${check_out}${N}"
+            return 1
+        fi
+    else 
+        error "配置文件合併失敗 (jq merge error)"
+        exit 1
+    fi
 }
