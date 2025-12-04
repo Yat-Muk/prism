@@ -13,6 +13,7 @@
 # GNU General Public License for more details.
 
 if [[ -f "${BASE_DIR}/modules/cert.sh" ]]; then source "${BASE_DIR}/modules/cert.sh"; fi
+if [[ -f "${BASE_DIR}/modules/menu_config.sh" ]]; then source "${BASE_DIR}/modules/menu_config.sh"; fi
 
 get_cert_remaining_days() {
     local cert_file="$1"
@@ -32,14 +33,8 @@ get_cert_remaining_days() {
 get_cert_end_date() {
     local cert_file="$1"
     if [[ ! -f "$cert_file" ]]; then echo "N/A"; return; fi
-    
     local raw_date=$(openssl x509 -enddate -noout -in "$cert_file" 2>/dev/null | cut -d= -f2)
-    
-    if [[ -n "$raw_date" ]]; then
-        date -d "$raw_date" "+%Y-%m-%d %H:%M:%S"
-    else
-        echo "Unknown"
-    fi
+    if [[ -n "$raw_date" ]]; then date -d "$raw_date" "+%Y-%m-%d %H:%M:%S"; else echo "Unknown"; fi
 }
 
 list_local_certs() {
@@ -78,12 +73,12 @@ list_local_certs() {
     fi
     
     if [[ "$count" -eq 0 ]]; then echo -e "  ${D}(暫無證書 / No Certificates Found)${N}"; fi
-    echo -e " ${D}------------------------------------${N}"
+    echo -e "${SEP}"
 }
 
 view_cert_details() {
     clear; print_banner
-    echo -e " ${B}>>> 證書詳細列表 (Certificate Details)${N}"
+    echo -e " ${P}>>> 證書詳細列表 (Certificate Details)${N}"
     echo -e "${SEP}"
     
     if [[ ! -f "$ACME_HOME/acme.sh" ]]; then
@@ -100,7 +95,6 @@ view_cert_details() {
     else
         while read -r line; do
             if [[ -z "$line" ]]; then continue; fi
-            
             local domain=$(echo "$line" | awk '{print $1}')
             local cert_path="${ACME_CERT_DIR}/${domain}.crt"
             local expiry_info="${D}文件丟失${N}"
@@ -109,14 +103,9 @@ view_cert_details() {
             if [[ -f "$cert_path" ]]; then
                 local days=$(get_cert_remaining_days "$cert_path")
                 end_date_str=$(get_cert_end_date "$cert_path")
-                
-                if [[ "$days" -lt 0 ]]; then
-                    expiry_info="${R}已過期 ${days#-} 天${N}"
-                elif [[ "$days" -lt 30 ]]; then
-                    expiry_info="${Y}剩餘 ${days} 天${N}"
-                else
-                    expiry_info="${G}剩餘 ${days} 天${N}"
-                fi
+                if [[ "$days" -lt 0 ]]; then expiry_info="${R}已過期 ${days#-} 天${N}";
+                elif [[ "$days" -lt 30 ]]; then expiry_info="${Y}剩餘 ${days} 天${N}";
+                else expiry_info="${G}剩餘 ${days} 天${N}"; fi
             fi
             
             local ca=$(echo "$line" | awk '{print $4}')
@@ -127,6 +116,7 @@ view_cert_details() {
             echo -e "  ${C}創建 (Create):${N} ${D}${created}${N}"
             echo -e "  ${C}過期 (Expire):${N} ${D}${end_date_str}${N}"
             echo -e "  ${C}狀態 (Status):${N} ${expiry_info}"
+            echo -e "${D}  ------------------------------------${N}"
         done <<< "$content"
     fi
     echo -e "${SEP}"
@@ -138,20 +128,19 @@ submenu_cert_apply() {
 
     while true; do
         clear; print_banner
-        echo -e " ${P}>>> 申請 ACME 證書${N}"
-        echo -e "${SEP}"
         list_local_certs
         echo -e "  ${P}1.${N} ${W}申請證書${N}     ${D}(HTTP/80端口模式 - 需釋放端口)${N}"
         echo -e "  ${P}2.${N} ${W}申請證書${N}     ${D}(DNS API模式 - 支持泛域名)${N}"
         echo -e "  ${P}3.${N} ${W}查看證書信息${N}"
         echo -e "  ${P}4.${N} ${R}強制續期證書${N}"
-        echo -e "${D}  ------------------------------------${N}"
+        echo -e "${SEP}"
         echo -e "  ${P}0.${N} 返回上級菜單"
         echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r c_choice
         case "${c_choice}" in
             1|2)
-                echo ""; read -p "請輸入註冊郵箱 (回車跳過): " u_mail
+                echo ""; read -p "請輸入註冊郵箱 (回車跳過，輸入 0 取消): " u_mail
+                if [[ "$u_mail" == "0" ]]; then continue; fi
                 if [[ -n "$u_mail" ]]; then register_acme_email "$u_mail"; fi
                 
                 if [[ "$c_choice" == "1" ]]; then
@@ -159,24 +148,53 @@ submenu_cert_apply() {
                         echo ""; read -p "請輸入域名 (需已解析到本機，輸入 0 返回): " domain
                         if [[ "$domain" == "0" ]]; then break; fi
                         if [[ -z "$domain" ]]; then error "域名不能為空"; continue; fi
+                        
                         check_domain_ip "$domain"
                         local ret=$?
-                        if [[ $ret -eq 0 ]]; then issue_cert "$domain" "standalone"; read -p "按回車繼續..."; break;
-                        elif [[ $ret -eq 2 ]]; then echo ""; read -p "是否強制申請? [y/N]: " f; if [[ "$f" == "y" || "$f" == "Y" ]]; then issue_cert "$domain" "standalone"; read -p "按回車繼續..."; break; fi
-                        else echo ""; warn "解析失敗"; read -p "重試? [Y/n]: " r; if [[ "$r" == "n" || "$r" == "N" ]]; then break; fi; fi
+                        if [[ $ret -eq 0 ]]; then 
+                            issue_cert "$domain" "standalone"
+                            read -p "按回車繼續..."; break
+                        elif [[ $ret -eq 2 ]]; then 
+                            echo ""; read -p "是否強制申請? [y/N]: " f
+                            if [[ "$f" == "y" || "$f" == "Y" ]]; then 
+                                issue_cert "$domain" "standalone"
+                                read -p "按回車繼續..."; break
+                            fi
+                        else 
+                            echo ""; warn "解析失敗"; 
+                            read -p "重試? [Y/n]: " r
+                            if [[ "$r" == "n" || "$r" == "N" ]]; then break; fi
+                        fi
                     done
                 else
                     while true; do
                         echo ""; read -p "請輸入域名 (支持泛域名，輸入 0 返回): " domain
                         if [[ "$domain" == "0" ]]; then break; fi
                         if [[ -z "$domain" ]]; then error "域名不能為空"; continue; fi
+                        
                         echo -e "\n請選擇 DNS 提供商: 1.Cloudflare 2.DNSPod 3.Aliyun 0.返回"
                         read -p "選擇: " dns_opt
                         case "$dns_opt" in
-                            1) read -p "CF Global API Key: " k; export CF_Key="$k"; read -p "CF Email: " e; export CF_Email="$e"; issue_cert "$domain" "dns" "dns_cf" ;;
-                            2) read -p "DNSPod ID: " i; export DP_Id="$i"; read -p "DNSPod Key: " k; export DP_Key="$k"; issue_cert "$domain" "dns" "dns_dp" ;;
-                            3) read -p "Aliyun Key: " k; export Ali_Key="$k"; read -p "Aliyun Secret: " s; export Ali_Secret="$s"; issue_cert "$domain" "dns" "dns_ali" ;;
-                            0) continue ;; *) error "無效選擇"; continue ;;
+                            1) 
+                                read -p "CF Global API Key (輸入 0 取消): " k; if [[ "$k" == "0" ]]; then continue; fi
+                                export CF_Key="$k"
+                                read -p "CF Email: " e; export CF_Email="$e"
+                                issue_cert "$domain" "dns" "dns_cf" 
+                                ;;
+                            2) 
+                                read -p "DNSPod ID (輸入 0 取消): " i; if [[ "$i" == "0" ]]; then continue; fi
+                                export DP_Id="$i"
+                                read -p "DNSPod Key: " k; export DP_Key="$k"
+                                issue_cert "$domain" "dns" "dns_dp" 
+                                ;;
+                            3) 
+                                read -p "Aliyun Key (輸入 0 取消): " k; if [[ "$k" == "0" ]]; then continue; fi
+                                export Ali_Key="$k"
+                                read -p "Aliyun Secret: " s; export Ali_Secret="$s"
+                                issue_cert "$domain" "dns" "dns_ali" 
+                                ;;
+                            0) continue ;; 
+                            *) error "無效選擇"; continue ;;
                         esac
                         read -p "按回車繼續..."; break
                     done
@@ -205,12 +223,7 @@ submenu_protocol_cert_mode() {
             if [[ -d "${ACME_CERT_DIR}" ]]; then
                 local auto_domain=$(find "${ACME_CERT_DIR}" -name "*.crt" -print -quit | xargs basename -s .crt)
                 if [[ -n "$auto_domain" ]]; then
-                    export PRISM_ACME_DOMAIN="$auto_domain"
-                    if grep -q "export PRISM_ACME_DOMAIN=" "${CONFIG_DIR}/secrets.env"; then
-                        sed -i "s|^export PRISM_ACME_DOMAIN=.*|export PRISM_ACME_DOMAIN=\"${auto_domain}\"|" "${CONFIG_DIR}/secrets.env"
-                    else
-                        echo "export PRISM_ACME_DOMAIN=\"${auto_domain}\"" >> "${CONFIG_DIR}/secrets.env"
-                    fi
+                    write_secret_no_apply "PRISM_ACME_DOMAIN" "$auto_domain"
                 fi
             fi
         fi
@@ -249,7 +262,7 @@ submenu_protocol_cert_mode() {
             echo -e "  ${D}(當前沒有開啟任何需要 TLS 的協議)${N}"
         fi
 
-        echo -e "${D}  ------------------------------------${N}"
+        echo -e "${SEP}"
         echo -e "  ${P}0.${N} 返回上級菜單"
         echo -e "${SEP}"
         echo -ne " 請輸入要切換的協議編號: "; read -r input_str
@@ -269,14 +282,12 @@ submenu_protocol_cert_mode() {
                 local new_mode="acme"
                 if [[ "$current_mode" == "acme" ]]; then new_mode="self_signed"; fi
                 
-                sed -i "s/export $target_var=.*/export $target_var=\"$new_mode\"/" "${CONFIG_DIR}/secrets.env"
-                export "$target_var"="$new_mode"
+                write_secret_no_apply "$target_var" "$new_mode"
                 changes_made=true
             fi
         done
 
         if [[ "$changes_made" == "true" ]]; then
-            source "${CONFIG_DIR}/secrets.env"
             if [[ -f "${BASE_DIR}/modules/config.sh" ]]; then 
                 source "${BASE_DIR}/modules/config.sh"
                 build_config
@@ -314,10 +325,10 @@ submenu_cert_main() {
         else
              echo -e "  當前 ACME 證書: ${D}無${N}"
         fi
-        echo -e "${D}  ------------------------------------${N}"
+        echo -e "${SEP}"
         echo -e "  ${P}1.${N} ${W}申請證書${N}     ${D}(申請 ACME 證書)${N}"
         echo -e "  ${P}2.${N} ${W}切換證書模式${N} ${D}(獨立設置協議證書)${N}"
-        echo -e "${D}  ------------------------------------${N}"
+        echo -e "${SEP}"
         echo -e "  ${P}0.${N} 返回上級菜單"
         echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r choice
