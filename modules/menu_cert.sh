@@ -326,7 +326,7 @@ submenu_cert_main() {
              echo -e "  當前 ACME 證書: ${D}無${N}"
         fi
         echo -e "${SEP}"
-        echo -e "  ${P}1.${N} ${W}申請證書${N}     ${D}(申請 ACME 證書)${N}"
+        echo -e "  ${P}1.${N} ${W}證書管理${N}     ${D}(申請 ACME 證書/證書信息)${N}"
         echo -e "  ${P}2.${N} ${W}切換證書模式${N} ${D}(獨立設置協議證書)${N}"
         echo -e "${SEP}"
         echo -e "  ${P}0.${N} 返回上級菜單"
