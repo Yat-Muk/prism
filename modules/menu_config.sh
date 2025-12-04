@@ -316,11 +316,11 @@ change_port_menu() {
             if [[ "$hop_mode" == "1" ]]; then
                 write_secret_no_apply "$hopping_var" ""
             elif [[ "$hop_mode" == "2" ]]; then
-                echo ""; echo -e " ${P}配置端口跳躍範圍${N}"; echo -e " ${D}示例: 20000-30000 (建議大於 1000)${N}"
+                echo ""; echo -e " ${P}配置端口跳躍範圍${N}"; echo -e " ${D}示例: 20000:30000 (建議大於 1000)${N}"
                 while true; do
-                    read -p " 請輸入範圍 (輸入 0 取消): " hop_range
+                    read -p " 請輸入範圍 (格式 min:max，輸入 0 取消): " hop_range
                     if [[ "$hop_range" == "0" ]]; then continue 2; fi
-                    if [[ "$hop_range" =~ ^[0-9]+-[0-9]+$ ]]; then
+                    if [[ "$hop_range" =~ ^[0-9]+:[0-9]+$ ]]; then
                             local s=$(echo "$hop_range" | cut -d- -f1); local e=$(echo "$hop_range" | cut -d- -f2)
                             if (( s < e && s >= 1 && e <= 65535 )); then write_secret_no_apply "$hopping_var" "$hop_range"; break;
                             else echo -e "${R} 範圍無效${N}"; fi
