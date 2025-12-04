@@ -101,6 +101,11 @@ check_script_update() {
     
     local remote_ver=$(head -n 1 "$temp_version_file")
     local changelog=$(tail -n +2 "$temp_version_file")
+    local local_ver="${PROJECT_VERSION}"
+    
+    if [[ -f "${WORK_DIR}/version" ]]; then
+        local_ver=$(head -n 1 "${WORK_DIR}/version")
+    fi
     
     echo -e " 當前版本: ${C}${PROJECT_VERSION}${N}"
     echo -e " 最新版本: ${G}${remote_ver:-未知}${N}"
@@ -148,11 +153,10 @@ perform_script_update() {
             success "引導腳本下載成功，正在執行全量更新..."
             sleep 1
             
-            bash "${BASE_DIR}/install.sh" update
-            exit 0
+            exec bash "${BASE_DIR}/install.sh" update
         else
             error "下載失敗，請檢查網絡連接 (GitHub Raw)"
-            read -p "按回車返回..."
+            read -p "按回車返回主菜單..."; show_menu; return
         fi
     fi
 }
@@ -169,7 +173,7 @@ submenu_core() {
         echo -ne " 請輸入選項: "; read -r choice
         case "$choice" in
             1) submenu_core_upgrade ;;
-            2) check_script_update ;;
+            2) check_script_update; return ;;
             0) break ;;
             *) error "無效輸入"; sleep 1 ;;
         esac
