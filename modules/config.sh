@@ -269,7 +269,7 @@ EOF
         local cert_info=$(get_cert_paths "${PRISM_HY2_CERT_MODE:-self_signed}")
         local crt_path=$(echo "$cert_info" | cut -d'|' -f1); local key_path=$(echo "$cert_info" | cut -d'|' -f2)
         cat > "${PARTS_DIR}/04_inbounds_hy2.json" <<EOF
-{ "inbounds": [{ "type": "hysteria2", "tag": "hy2-in", "listen": "::", "listen_port": ${PRISM_PORT_HY2:-8888}, "users": [{ "password": "${PRISM_HY2_PASSWORD}" }], "tls": { "enabled": true, "alpn": ["h3"], "certificate_path": "${crt_path}", "key_path": "${key_path}" } }] }
+{ "inbounds": [{ "type": "hysteria2", "tag": "hy2-in", "listen": "::", "listen_port": ${PRISM_PORT_HY2:-8888}, "users": [{ "password": "${PRISM_HY2_PASSWORD}" }], "ignore_client_bandwidth": false, "tls": { "enabled": true, "alpn": ["h3"], "certificate_path": "${crt_path}", "key_path": "${key_path}" } }] }
 EOF
     fi
 
@@ -308,10 +308,32 @@ EOF
 { 
   "inbounds": [{ 
     "type": "anytls", 
+    "tag": "anytls-in", 
+    "listen": "::", 
+    "listen_port": ${PRISM_PORT_ANYTLS:-10443}, 
+    "users": [{ "name": "prism", "password": "${PRISM_ANYTLS_PASSWORD}" }], 
+    "padding_scheme": [ "stop=8", "0=30-30", "1=100-400", "2=400-500,c,500-1000,c,500-1000,c,500-1000,c,500-1000", "3=9-9,500-1000", "4=500-1000", "5=500-1000", "6=500-1000", "7=500-1000" ],
+    "tls": { 
+      "enabled": true, 
+      "server_name": "${PRISM_ACME_DOMAIN:-www.bing.com}", 
+      "certificate_path": "${crt_path}", 
+      "key_path": "${key_path}" 
+    } 
+  }] 
+}
+EOF
+    fi
+
+    if [[ "${PRISM_ENABLE_SHADOWTLS:-}" == "true" ]]; then
+        cat > "${PARTS_DIR}/04_inbounds_shadowtls.json" <<EOF
+{ 
+  "inbounds": [{ 
+    "type": "anytls", 
     "tag": "anytls-reality-in", 
     "listen": "::", 
     "listen_port": ${PRISM_PORT_ANYTLS_REALITY:-20443}, 
     "users": [{ "name": "prism", "password": "${PRISM_ANYTLS_REALITY_PASSWORD}" }], 
+    "padding_scheme": [ "stop=8", "0=30-30", "1=100-400", "2=400-500,c,500-1000,c,500-1000,c,500-1000,c,500-1000", "3=9-9,500-1000", "4=500-1000", "5=500-1000", "6=500-1000", "7=500-1000" ],
     "tls": { 
       "enabled": true, 
       "server_name": "${PRISM_DEST}", 
@@ -332,31 +354,10 @@ EOF
 
     if [[ "${PRISM_ENABLE_SHADOWTLS:-}" == "true" ]]; then
         cat > "${PARTS_DIR}/04_inbounds_shadowtls.json" <<EOF
-{ 
-  "inbounds": [ 
-    { 
-      "type": "shadowtls", 
-      "tag": "shadowtls-in", 
-      "listen": "::", 
-      "listen_port": ${PRISM_PORT_SHADOWTLS:-30443}, 
-      "version": 3, 
-      "users": [{ "password": "${PRISM_SHADOWTLS_PASSWORD}" }], 
-      "handshake": { "server": "${PRISM_DEST}", "server_port": 443 }, 
-      "detour": "ss-inner" 
-    }, 
-    { 
-      "type": "shadowsocks", 
-      "tag": "ss-inner", 
-      "listen": "127.0.0.1", 
-      "listen_port": ${PRISM_PORT_INNER_VLESS:-40443}, 
-      "method": "2022-blake3-aes-128-gcm", 
-      "password": "${PRISM_SS_PASSWORD}" 
-    } 
-  ] 
-}
+{ "inbounds": [ { "type": "shadowtls", "tag": "shadowtls-in", "listen": "::", "listen_port": ${PRISM_PORT_SHADOWTLS:-30443}, "version": 3, "users": [{ "password": "${PRISM_SHADOWTLS_PASSWORD}" }], "handshake": { "server": "${PRISM_DEST}", "server_port": 443 }, "detour": "ss-inner" }, { "type": "shadowsocks", "tag": "ss-inner", "listen": "127.0.0.1", "listen_port": ${PRISM_PORT_INNER_VLESS:-40443}, "method": "2022-blake3-aes-128-gcm", "password": "${PRISM_SS_PASSWORD}" } ] }
 EOF
     fi
-
+    
     if [[ "${PRISM_SOCKS5_IN_ENABLE:-}" == "true" ]]; then
         cat > "${PARTS_DIR}/04_inbounds_socks5.json" <<EOF
 { "inbounds": [{ "type": "socks", "tag": "socks5-in", "listen": "::", "listen_port": ${PRISM_SOCKS5_IN_PORT:-10808}, "users": [{ "username": "${PRISM_SOCKS5_IN_USER:-prism}", "password": "${PRISM_SOCKS5_IN_PASS:-prism}" }] }] }
