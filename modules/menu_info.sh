@@ -187,15 +187,17 @@ display_links_and_qr() {
 
     if [[ "${PRISM_ENABLE_SHADOWTLS}" == "true" ]]; then
         ((node_count++))
-        echo -e " ${G}${node_count}. ShadowTLS v3${N} ${D}[Wrapper]${N}"
+        echo -e " ${G}${node_count}. ShadowTLS v3${N} ${D}[SS-2022+Wrapper]${N}"
         p_kv "Address (地址)"      "${Y}${ip}${N}"
         p_kv "Port (端口)"         "${Y}${PRISM_PORT_SHADOWTLS}${N}"
-        p_kv "Password (密碼)"     "${W}${PRISM_SHADOWTLS_PASSWORD}${N}"
         p_kv "Handshake (握手域名)" "${W}${PRISM_DEST}${N}"
-        p_kv "Version (版本)"      "3"
-        p_kv "Detour (內部轉發)"   "VLESS-TCP"
+        p_kv "ShadowTLS Pwd (偽裝密碼)" "${W}${PRISM_SHADOWTLS_PASSWORD}${N}"
+        p_kv "Inner Proto (內層協議)" "SS-2022 (blake3-aes-128-gcm)"
+        p_kv "SS Password (加密密碼)" "${Y}${PRISM_SS_PASSWORD}${N}"
         
-        local link="vless://${PRISM_UUID}@${ip_url}:${PRISM_PORT_SHADOWTLS}?security=shadowtls&encryption=none&type=tcp&sni=${PRISM_DEST}&password=${PRISM_SHADOWTLS_PASSWORD}&version=3#Prism_ShadowTLS"
+        local ss_auth=$(echo -n "2022-blake3-aes-128-gcm:${PRISM_SS_PASSWORD}" | base64 | tr -d '\n')
+        local link="ss://${ss_auth}@${ip_url}:${PRISM_PORT_SHADOWTLS}?plugin=shadow-tls%3Bserver%3D${PRISM_DEST}%3Bpassword%3D${PRISM_SHADOWTLS_PASSWORD}%3Bversion%3D3#Prism_ShadowTLS"
+        
         echo -e " ${D}---------------------------------------------------------${N}"
         echo -e "${W}${link}${N}"; print_qr_block "${link}" "ShadowTLS"
         echo -e "${SEP}"
@@ -274,7 +276,7 @@ display_client_json() {
     fi
     if [[ "${PRISM_ENABLE_SHADOWTLS}" == "true" ]]; then
         JSON_OUTBOUNDS+=("$(generate_json_outbound_object "shadowtls")")
-        JSON_OUTBOUNDS+=("{ \"type\": \"vless\", \"tag\": \"ShadowTLS\", \"detour\": \"ShadowTLS-Out\", \"uuid\": \"${PRISM_UUID}\", \"flow\": \"\" }")
+        JSON_OUTBOUNDS+=("{ \"type\": \"shadowsocks\", \"tag\": \"ShadowTLS\", \"detour\": \"ShadowTLS-Out\", \"method\": \"2022-blake3-aes-128-gcm\", \"password\": \"${PRISM_SS_PASSWORD}\" }")
         PROXY_TAGS+=("\"ShadowTLS\"")
     fi
 
@@ -339,8 +341,8 @@ show_node_info() {
         clear; print_banner
         echo -e " ${P}>>> 節點信息 (Node Information)${N}"
         echo -e "${SEP}"
-        echo -e "  ${P}1.${N} ${W}查看 鏈接 & 訂閱${N}    ${D}(All-in-One Details)${N}"
-        echo -e "  ${P}2.${N} ${W}獲取 客戶端配置${N}     ${D}(Full JSON Config)${N}"
+        echo -e "  ${P}1.${N} ${W}查看 鏈接 & 訂閱${N}  ${D}(離線訂閱 & 二維碼)${N}"
+        echo -e "  ${P}2.${N} ${W}獲取 客戶端配置${N}   ${D}(完整 JSON 配置)${N}"
         echo -e "${SEP}"
         echo -e "  ${P}0.${N} 返回主菜單"
         echo -e "${SEP}"
