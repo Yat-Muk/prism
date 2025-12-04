@@ -35,7 +35,7 @@ export PKG_MANAGER=""
 export PKG_UPDATE_CMD=""
 export PKG_INSTALL_CMD=""
 
-if [[ -f "${WORK_DIR}/version.txt" ]]; then
+if [[ -f "${WORK_DIR}/version" ]]; then
     export PROJECT_VERSION=$(head -n 1 "${WORK_DIR}/version")
 else
     export PROJECT_VERSION="v2.0.4"
