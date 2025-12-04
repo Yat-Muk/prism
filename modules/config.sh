@@ -47,12 +47,9 @@ get_cert_paths() {
 }
 
 set_env_default() {
-    local key="$1"
-    local val="$2"
+    local key="$1"; local val="$2"
     if [[ -z "${!key}" ]]; then
-        if ! grep -q "^export ${key}=" "${SECRETS_FILE}" 2>/dev/null; then
-            echo "export ${key}=\"${val}\"" >> "${SECRETS_FILE}"
-        fi
+        if ! grep -q "^export ${key}=" "${SECRETS_FILE}" 2>/dev/null; then echo "export ${key}=\"${val}\"" >> "${SECRETS_FILE}"; fi
         export "${key}=${val}"
     fi
 }
@@ -97,15 +94,12 @@ manage_secrets() {
         set_env_default "PRISM_ENABLE_REALITY_VISION" "true"
         set_env_default "PRISM_ENABLE_HY2" "true"
         set_env_default "PRISM_ENABLE_TUIC" "true"
-        
         set_env_default "PRISM_ENABLE_REALITY_GRPC" "false"
         set_env_default "PRISM_ENABLE_ANYTLS" "false"
         set_env_default "PRISM_ENABLE_ANYTLS_REALITY" "false"
         set_env_default "PRISM_ENABLE_SHADOWTLS" "false"
     fi
-
     set_env_default "PRISM_OUTBOUND_MODE" "prefer_ipv4"
-    
     source "${SECRETS_FILE}"
 }
 
@@ -142,7 +136,6 @@ EOF
 
     if [[ "${PRISM_WARP_ENABLE:-}" == "true" ]]; then
         local warp_bind="172.16.0.2"
-        if [[ "${PRISM_WARP_TYPE:-}" == "IPv6" ]]; then warp_bind="${PRISM_WARP_IPV6_ADDR:-}"; fi
         local warp_reserved="${PRISM_WARP_RESERVED:-[0,0,0]}"
         [[ -z "$warp_reserved" ]] && warp_reserved="[0,0,0]"
         
