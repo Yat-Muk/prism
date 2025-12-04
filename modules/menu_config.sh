@@ -31,7 +31,6 @@ write_secret_no_apply() {
     else
         echo "export ${key}=\"${safe_val}\"" >> "${file}"
     fi
-    
     export "${key}=${raw_value}"
 }
 
@@ -71,27 +70,23 @@ change_outbound_mode() {
     echo -e "  ${P}2.${N} ${G}IPv6 優先${N}   ${D}(適合特定解鎖)${N}"
     echo -e "  ${P}3.${N} ${Y}僅 IPv4${N}     ${D}(強制走 IPv4)${N}"
     echo -e "  ${P}4.${N} ${Y}僅 IPv6${N}     ${D}(強制走 IPv6)${N}"
-    echo -e "${D}  ------------------------------------${N}"
+    echo -e "${SEP}"
     echo -e "  ${P}0.${N} 返回主菜單"
     echo -e "${SEP}"
     echo -ne " 請輸入選項: "; read -r mode_choice
     
     local new_mode=""
     case "${mode_choice}" in
-        1) new_mode="prefer_ipv4" ;; 2) new_mode="prefer_ipv6" ;; 3) new_mode="ipv4_only" ;; 4) new_mode="ipv6_only" ;; 0) show_menu; return ;; *) change_outbound_mode; return ;;
+        1) new_mode="prefer_ipv4" ;; 
+        2) new_mode="prefer_ipv6" ;; 
+        3) new_mode="ipv4_only" ;; 
+        4) new_mode="ipv6_only" ;; 
+        0) show_menu; return ;; 
+        *) change_outbound_mode; return ;;
     esac
     
-    if [[ -f "${CONFIG_DIR}/secrets.env" ]]; then
-        sed -i "s/export PRISM_OUTBOUND_MODE=.*/export PRISM_OUTBOUND_MODE=\"${new_mode}\"/" "${CONFIG_DIR}/secrets.env"
-        export PRISM_OUTBOUND_MODE="${new_mode}"
-        if [[ -f "${BASE_DIR}/modules/config.sh" ]]; then 
-            source "${BASE_DIR}/modules/config.sh"
-            info "正在應用新策略..."
-            build_config
-            systemctl restart prism
-            success "切換成功！"
-        fi
-    else error "未找到配置文件，請先安裝。"; fi
+    write_secret_no_apply "PRISM_OUTBOUND_MODE" "${new_mode}"
+    apply_changes
     sleep 1.5; show_menu
 }
 
@@ -134,16 +129,14 @@ select_protocols_wizard() {
         done
     done
 
-    mkdir -p "${CONFIG_DIR}"
-    cat > "${CONFIG_DIR}/secrets.env" <<EOF
-export PRISM_ENABLE_REALITY_VISION="${w_vision}"
-export PRISM_ENABLE_REALITY_GRPC="${w_grpc}"
-export PRISM_ENABLE_HY2="${w_hy2}"
-export PRISM_ENABLE_TUIC="${w_tuic}"
-export PRISM_ENABLE_ANYTLS="${w_anytls}"
-export PRISM_ENABLE_ANYTLS_REALITY="${w_any_reality}"
-export PRISM_ENABLE_SHADOWTLS="${w_shadow}"
-EOF
+    write_secret_no_apply "PRISM_ENABLE_REALITY_VISION" "${w_vision}"
+    write_secret_no_apply "PRISM_ENABLE_REALITY_GRPC" "${w_grpc}"
+    write_secret_no_apply "PRISM_ENABLE_HY2" "${w_hy2}"
+    write_secret_no_apply "PRISM_ENABLE_TUIC" "${w_tuic}"
+    write_secret_no_apply "PRISM_ENABLE_ANYTLS" "${w_anytls}"
+    write_secret_no_apply "PRISM_ENABLE_ANYTLS_REALITY" "${w_any_reality}"
+    write_secret_no_apply "PRISM_ENABLE_SHADOWTLS" "${w_shadow}"
+    
     success "協議選擇已保存，正在生成密鑰與端口..."
     sleep 1
 }
@@ -163,23 +156,22 @@ submenu_protocol_switch() {
         echo -e "  ${P}5.${N} ${W}AnyTLS${N}                $(status_icon ${PRISM_ENABLE_ANYTLS:-false})"
         echo -e "  ${P}6.${N} ${W}AnyTLS + Reality${N}      $(status_icon ${PRISM_ENABLE_ANYTLS_REALITY:-false})"
         echo -e "  ${P}7.${N} ${W}ShadowTLS v3${N}          $(status_icon ${PRISM_ENABLE_SHADOWTLS:-false})"
-        echo -e "${D}  ------------------------------------${N}"
+        echo -e "${SEP}"
         echo -e "  ${P}s.${N} ${B}保存並應用${N}"
         echo -e "  ${P}0.${N} 放棄修改"
         echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r input_str
         
         if [[ "$input_str" == "s" ]]; then
-             sed -i "s/export PRISM_ENABLE_REALITY_VISION=.*/export PRISM_ENABLE_REALITY_VISION=\"${PRISM_ENABLE_REALITY_VISION}\"/" "${CONFIG_DIR}/secrets.env"
-             sed -i "s/export PRISM_ENABLE_REALITY_GRPC=.*/export PRISM_ENABLE_REALITY_GRPC=\"${PRISM_ENABLE_REALITY_GRPC}\"/" "${CONFIG_DIR}/secrets.env"
-             sed -i "s/export PRISM_ENABLE_HY2=.*/export PRISM_ENABLE_HY2=\"${PRISM_ENABLE_HY2}\"/" "${CONFIG_DIR}/secrets.env"
-             sed -i "s/export PRISM_ENABLE_TUIC=.*/export PRISM_ENABLE_TUIC=\"${PRISM_ENABLE_TUIC}\"/" "${CONFIG_DIR}/secrets.env"
-             sed -i "s/export PRISM_ENABLE_ANYTLS=.*/export PRISM_ENABLE_ANYTLS=\"${PRISM_ENABLE_ANYTLS}\"/" "${CONFIG_DIR}/secrets.env"
-             sed -i "s/export PRISM_ENABLE_ANYTLS_REALITY=.*/export PRISM_ENABLE_ANYTLS_REALITY=\"${PRISM_ENABLE_ANYTLS_REALITY}\"/" "${CONFIG_DIR}/secrets.env"
-             sed -i "s/export PRISM_ENABLE_SHADOWTLS=.*/export PRISM_ENABLE_SHADOWTLS=\"${PRISM_ENABLE_SHADOWTLS}\"/" "${CONFIG_DIR}/secrets.env"
-            if [[ -f "${BASE_DIR}/modules/config.sh" ]]; then source "${BASE_DIR}/modules/config.sh"; manage_secrets; build_config; systemctl restart prism; success "應用成功！"; fi
-            sleep 1.5
-            show_menu; return
+             write_secret_no_apply "PRISM_ENABLE_REALITY_VISION" "${PRISM_ENABLE_REALITY_VISION}"
+             write_secret_no_apply "PRISM_ENABLE_REALITY_GRPC" "${PRISM_ENABLE_REALITY_GRPC}"
+             write_secret_no_apply "PRISM_ENABLE_HY2" "${PRISM_ENABLE_HY2}"
+             write_secret_no_apply "PRISM_ENABLE_TUIC" "${PRISM_ENABLE_TUIC}"
+             write_secret_no_apply "PRISM_ENABLE_ANYTLS" "${PRISM_ENABLE_ANYTLS}"
+             write_secret_no_apply "PRISM_ENABLE_ANYTLS_REALITY" "${PRISM_ENABLE_ANYTLS_REALITY}"
+             write_secret_no_apply "PRISM_ENABLE_SHADOWTLS" "${PRISM_ENABLE_SHADOWTLS}"
+             apply_changes
+             show_menu; return
         elif [[ "$input_str" == "0" ]]; then 
             submenu_config; return
         else
@@ -202,29 +194,43 @@ submenu_protocol_switch() {
 change_reality_sni() {
     clear; print_banner
     echo -e " ${P}>>> 更換 Reality 域名偽裝${N}"
-    echo -e " 當前 SNI: ${C}${PRISM_DEST:-www.microsoft.com}${N}"; echo -e "${SEP}"
-    read -p " 請輸入新的 SNI (回車取消): " new_sni
-    if [[ -n "$new_sni" ]]; then
-        update_secret "PRISM_DEST" "$new_sni"
-        show_menu; return
-    fi
-    submenu_config
+    echo -e " ${D}功能：修改 Reality 協議偷取的目標域名 (需支持 TLSv1.3)${N}"
+    echo -e " 當前 SNI: ${C}${PRISM_DEST:-www.microsoft.com}${N}"
+    echo -e "${SEP}"
+    
+    read -p " 請輸入新的 SNI (輸入 0 或回車取消): " new_sni
+    if [[ "$new_sni" == "0" || -z "$new_sni" ]]; then submenu_config; return; fi
+    
+    update_secret "PRISM_DEST" "$new_sni"
+    show_menu
 }
 
 change_uuid() {
     clear; print_banner
     echo -e " ${P}>>> 更換全協議 UUID${N}"
-    echo -e " 當前 UUID: ${C}${PRISM_UUID}${N}"; echo -e "${SEP}"
+    echo -e " ${D}功能：重置所有協議的用戶 ID${N}"
+    echo -e " 當前 UUID: ${C}${PRISM_UUID}${N}"
+    echo -e "${SEP}"
     echo -e "  ${P}1.${N} 自動生成 (推薦)"
     echo -e "  ${P}2.${N} 手動輸入"
     echo -e "  ${P}0.${N} 返回"
     echo -ne " 選擇: "; read -r choice
-    local new_uuid=""; case "$choice" in 1) new_uuid=$(${SINGBOX_BIN} generate uuid) ;; 2) read -p " UUID: " input_uuid; new_uuid="$input_uuid" ;; 0) submenu_config; return ;; *) error "無效"; sleep 1; change_uuid; return ;; esac
+    
+    local new_uuid=""
+    case "$choice" in 
+        1) new_uuid=$(${SINGBOX_BIN} generate uuid) ;; 
+        2) read -p " 請輸入新 UUID (輸入 0 取消): " input_uuid
+           if [[ "$input_uuid" == "0" ]]; then submenu_config; return; fi
+           new_uuid="$input_uuid" 
+           ;; 
+        0) submenu_config; return ;; 
+        *) error "無效"; sleep 1; change_uuid; return ;; 
+    esac
+
     if [[ -n "$new_uuid" ]]; then
         write_secret_no_apply "PRISM_UUID" "$new_uuid"
         write_secret_no_apply "PRISM_TUIC_UUID" "$new_uuid"
         apply_changes
-        read -p " 按回車返回菜單..."
         show_menu; return
     fi
     submenu_config
@@ -261,59 +267,62 @@ change_port_menu() {
         add_opt "ShadowTLS v3"         "PRISM_PORT_SHADOWTLS"      "PRISM_ENABLE_SHADOWTLS" ""
         add_opt "NaiveProxy"           "PRISM_PORT_NAIVE"          "PRISM_ENABLE_NAIVE" ""
 
-        echo -e "${SEP}"; echo -e "  ${P}0.${N} 返回上級菜單"; echo -e "================================================="
+        echo -e "${SEP}"
+        echo -e "  ${P}0.${N} 返回上級菜單"
+        echo -e "${SEP}"
         echo -ne " 請輸入要修改的協議編號: "; read -r p_choice
         
         if [[ "$p_choice" == "0" ]]; then break; fi
         
         local target_info="${options[p_choice]}"
+        if [[ -z "$target_info" ]]; then error "無效選擇"; sleep 1; continue; fi
+
         local target_var=$(echo "$target_info" | cut -d'|' -f1)
         local hopping_var=$(echo "$target_info" | cut -d'|' -f2)
         
-        if [[ -n "$target_var" ]]; then
-            local hop_mode="1"
-            
-            if [[ -n "$hopping_var" ]]; then
-                echo ""; echo -e " ${B}>>> 請選擇端口模式${N}"; echo -e "================================================="
-                echo -e "  1. ${W}單端口模式${N} (清除跳躍規則)"; echo -e "  2. ${W}多端口跳躍/復用${N} (Port Hopping)"; echo -e "  0. 取消"; echo -e "================================================="
-                read -p " 請選擇: " hop_mode_select
-                if [[ "$hop_mode_select" == "1" ]]; then hop_mode="1"; 
-                elif [[ "$hop_mode_select" == "2" ]]; then hop_mode="2"; 
-                elif [[ "$hop_mode_select" == "0" ]]; then continue; 
-                else error "無效選擇"; sleep 1; continue; fi
-            fi
+        local hop_mode="1"
+        if [[ -n "$hopping_var" ]]; then
+            echo ""; echo -e " ${B}>>> 請選擇端口模式${N}"
+            echo -e "================================================="
+            echo -e "  1. ${W}單端口模式${N} (清除跳躍規則)"
+            echo -e "  2. ${W}多端口跳躍/復用${N} (Port Hopping)"
+            echo -e "  0. 取消"
+            echo -e "================================================="
+            read -p " 請選擇: " hop_mode_select
+            if [[ "$hop_mode_select" == "0" ]]; then continue; fi
+            if [[ "$hop_mode_select" == "2" ]]; then hop_mode="2"; fi
+        fi
 
-            echo ""; echo -e " 當前主端口: ${C}${!target_var:-Unset}${N}"
-            local new_port=""
-            while true; do
-                read -p " 請輸入新端口 (1-65535) [回車保持不變]: " input_port
-                if [[ -z "$input_port" ]]; then new_port="${!target_var}"; break;
-                elif [[ "$input_port" =~ ^[0-9]+$ ]] && [ "$input_port" -ge 1 ] && [ "$input_port" -le 65535 ]; then new_port="$input_port"; break;
-                else echo -e "${R} 端口無效，請重新輸入。${N}"; fi
-            done
+        echo ""; echo -e " 當前主端口: ${C}${!target_var:-Unset}${N}"
+        local new_port=""
+        while true; do
+            read -p " 請輸入新端口 (1-65535) [回車保持不變, 0 取消]: " input_port
+            if [[ "$input_port" == "0" ]]; then continue 2; fi
+            if [[ -z "$input_port" ]]; then new_port="${!target_var}"; break;
+            elif [[ "$input_port" =~ ^[0-9]+$ ]] && [ "$input_port" -ge 1 ] && [ "$input_port" -le 65535 ]; then new_port="$input_port"; break;
+            else echo -e "${R} 端口無效，請重新輸入。${N}"; fi
+        done
 
-            write_secret_no_apply "$target_var" "$new_port"
-            
-            if [[ -n "$hopping_var" ]]; then
-                if [[ "$hop_mode" == "1" ]]; then
-                    write_secret_no_apply "$hopping_var" ""
-                elif [[ "$hop_mode" == "2" ]]; then
-                    echo ""; echo -e " ${P}配置端口跳躍範圍${N}"; echo -e " ${D}示例: 20000-30000 (建議大於 1000)${N}"
-                    while true; do
-                        read -p " 請輸入範圍: " hop_range
-                        if [[ "$hop_range" == "del" ]]; then write_secret_no_apply "$hopping_var" ""; break;
-                        elif [[ "$hop_range" =~ ^[0-9]+-[0-9]+$ ]]; then
-                             local s=$(echo "$hop_range" | cut -d- -f1); local e=$(echo "$hop_range" | cut -d- -f2)
-                             if (( s < e && s >= 1 && e <= 65535 )); then write_secret_no_apply "$hopping_var" "$hop_range"; break;
-                             else echo -e "${R} 範圍無效${N}"; fi
-                        else echo -e "${R} 格式錯誤${N}"; fi
-                    done
-                fi
+        write_secret_no_apply "$target_var" "$new_port"
+        
+        if [[ -n "$hopping_var" ]]; then
+            if [[ "$hop_mode" == "1" ]]; then
+                write_secret_no_apply "$hopping_var" ""
+            elif [[ "$hop_mode" == "2" ]]; then
+                echo ""; echo -e " ${P}配置端口跳躍範圍${N}"; echo -e " ${D}示例: 20000-30000 (建議大於 1000)${N}"
+                while true; do
+                    read -p " 請輸入範圍 (輸入 0 取消): " hop_range
+                    if [[ "$hop_range" == "0" ]]; then continue 2; fi
+                    if [[ "$hop_range" =~ ^[0-9]+-[0-9]+$ ]]; then
+                            local s=$(echo "$hop_range" | cut -d- -f1); local e=$(echo "$hop_range" | cut -d- -f2)
+                            if (( s < e && s >= 1 && e <= 65535 )); then write_secret_no_apply "$hopping_var" "$hop_range"; break;
+                            else echo -e "${R} 範圍無效${N}"; fi
+                    else echo -e "${R} 格式錯誤${N}"; fi
+                done
             fi
-            
-            apply_changes
-            read -p " 按回車繼續..."
-        else error "無效選擇"; sleep 1; fi
+        fi
+        
+        apply_changes
     done
     submenu_config
 }
