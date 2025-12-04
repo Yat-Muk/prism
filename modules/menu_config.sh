@@ -195,7 +195,10 @@ change_reality_sni() {
     clear; print_banner
     echo -e " ${P}>>> 更換 Reality 域名偽裝${N}"
     echo -e " ${D}功能：修改 Reality 協議偷取的目標域名 (需支持 TLSv1.3)${N}"
+    echo -e "${SEP}"
     echo -e " 當前 SNI: ${C}${PRISM_DEST:-www.microsoft.com}${N}"
+    echo -e "${SEP}"
+    echo -e "  ${P}0.${N} 返回"
     echo -e "${SEP}"
     
     read -p " 請輸入新的 SNI (輸入 0 或回車取消): " new_sni
@@ -209,11 +212,14 @@ change_uuid() {
     clear; print_banner
     echo -e " ${P}>>> 更換全協議 UUID${N}"
     echo -e " ${D}功能：重置所有協議的用戶 ID${N}"
+    echo -e "${SEP}"
     echo -e " 當前 UUID: ${C}${PRISM_UUID}${N}"
     echo -e "${SEP}"
     echo -e "  ${P}1.${N} 自動生成 (推薦)"
     echo -e "  ${P}2.${N} 手動輸入"
+    echo -e "${SEP}"
     echo -e "  ${P}0.${N} 返回"
+    echo -e "${SEP}"
     echo -ne " 選擇: "; read -r choice
     
     local new_uuid=""
@@ -240,7 +246,7 @@ change_port_menu() {
     while true; do
         clear; print_banner
         echo -e " ${B}>>> 更換端口 (Change Port)${N}"
-        echo -e "================================================="
+        echo -e "${SEP}"
         
         local options=(); local index=1
         add_opt() {
@@ -283,11 +289,12 @@ change_port_menu() {
         local hop_mode="1"
         if [[ -n "$hopping_var" ]]; then
             echo ""; echo -e " ${B}>>> 請選擇端口模式${N}"
-            echo -e "================================================="
+            echo -e "${SEP}"
             echo -e "  1. ${W}單端口模式${N} (清除跳躍規則)"
             echo -e "  2. ${W}多端口跳躍/復用${N} (Port Hopping)"
+            echo -e "${SEP}"
             echo -e "  0. 取消"
-            echo -e "================================================="
+            echo -e "${SEP}"
             read -p " 請選擇: " hop_mode_select
             if [[ "$hop_mode_select" == "0" ]]; then continue; fi
             if [[ "$hop_mode_select" == "2" ]]; then hop_mode="2"; fi
