@@ -24,27 +24,29 @@ check_root() {
 }
 
 detect_os() {
-    if command -v lsb_release &> /dev/null; then
+    if [[ -f /etc/os-release ]]; then
+        source /etc/os-release
+        OS_RELEASE="${ID}"
+        OS_VERSION="${VERSION_ID}"
+    elif command -v lsb_release &> /dev/null; then
         OS_RELEASE=$(lsb_release -is)
         OS_VERSION=$(lsb_release -rs)
-    elif [[ -f /etc/os-release ]]; then
-        local id_val=$(grep -E "^ID=" /etc/os-release | cut -d= -f2 | tr -d '"')
-        local ver_val=$(grep -E "^VERSION_ID=" /etc/os-release | cut -d= -f2 | tr -d '"')
-        
-        OS_RELEASE="$(tr '[:lower:]' '[:upper:]' <<< ${id_val:0:1})${id_val:1}"
-        OS_VERSION="$ver_val"
     else
         OS_RELEASE="Unknown"
         OS_VERSION=""
     fi
 
+    if [[ -n "${OS_RELEASE}" ]]; then
+        OS_RELEASE="$(tr '[:lower:]' '[:upper:]' <<< ${OS_RELEASE:0:1})${OS_RELEASE:1}"
+    fi
+
     case "${OS_RELEASE,,}" in
-        ubuntu|debian|kali|linuxmint)
+        ubuntu|debian|kali|linuxmint|armbian)
             PKG_MANAGER="apt"
             PKG_UPDATE_CMD="apt-get update -y"
             PKG_INSTALL_CMD="apt-get install -y --no-install-recommends"
             ;;
-        centos|rhel|fedora|almalinux|rocky)
+        centos|rhel|fedora|almalinux|rocky|amzn)
             PKG_MANAGER="yum"
             PKG_UPDATE_CMD="yum update -y"
             PKG_INSTALL_CMD="yum install -y"
