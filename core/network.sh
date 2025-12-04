@@ -79,14 +79,14 @@ update_all_port_hopping() {
     iptables -F "${chain_name}"
 
     if [[ "${PRISM_ENABLE_HY2:-false}" == "true" && -n "${PRISM_HY2_PORT_HOPPING:-}" ]]; then
-        local start=$(echo "${PRISM_HY2_PORT_HOPPING}" | cut -d- -f1)
-        local end=$(echo "${PRISM_HY2_PORT_HOPPING}" | cut -d- -f2)
+        local start=$(echo "${PRISM_HY2_PORT_HOPPING}" | cut -d: -f1)
+        local end=$(echo "${PRISM_HY2_PORT_HOPPING}" | cut -d: -f2)
         add_hopping_rule "$start" "$end" "${PRISM_PORT_HY2}" "prism_hy2_hopping"
     fi
 
     if [[ "${PRISM_ENABLE_TUIC:-false}" == "true" && -n "${PRISM_TUIC_PORT_HOPPING:-}" ]]; then
-        local start=$(echo "${PRISM_TUIC_PORT_HOPPING}" | cut -d- -f1)
-        local end=$(echo "${PRISM_TUIC_PORT_HOPPING}" | cut -d- -f2)
+        local start=$(echo "${PRISM_TUIC_PORT_HOPPING}" | cut -d: -f1)
+        local end=$(echo "${PRISM_TUIC_PORT_HOPPING}" | cut -d: -f2)
         add_hopping_rule "$start" "$end" "${PRISM_PORT_TUIC}" "prism_tuic_hopping"
     fi
     
