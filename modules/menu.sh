@@ -108,7 +108,7 @@ show_menu() {
     echo -e " IPv6地址: ${v6_disp}"
     echo -e "${SEP}"
     
-    echo -e "  ${P}1.${N} ${install_color}安裝 Prism${N}     (${install_text})"
+    echo -e "  ${P}1.${N} ${install_color}安裝部署 Prism${N} (${install_text})"
     echo -e "  ${P}2.${N} ${W}啟動 / 重啟 服務${N}"
     echo -e "  ${P}3.${N} ${W}停止 服務${N}"
     echo -e "${D}  ------------------------------------${N}"
