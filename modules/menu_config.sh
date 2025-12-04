@@ -321,7 +321,8 @@ change_port_menu() {
                     read -p " 請輸入範圍 (格式 min:max，輸入 0 取消): " hop_range
                     if [[ "$hop_range" == "0" ]]; then continue 2; fi
                     if [[ "$hop_range" =~ ^[0-9]+:[0-9]+$ ]]; then
-                            local s=$(echo "$hop_range" | cut -d- -f1); local e=$(echo "$hop_range" | cut -d- -f2)
+                            local s=${hop_range%%:*}
+                            local e=${hop_range##*:}
                             if (( s < e && s >= 1 && e <= 65535 )); then write_secret_no_apply "$hopping_var" "$hop_range"; break;
                             else echo -e "${R} 範圍無效${N}"; fi
                     else echo -e "${R} 格式錯誤${N}"; fi
