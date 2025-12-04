@@ -40,29 +40,20 @@ EOF
     echo -e "${N}"
 }
 
-info() {
-    echo -e "${B}[INFO]${N} $1"
-    log_info "$1"
+_ensure_log() {
+    if [[ -z "${LOG_FILE}" ]]; then LOG_FILE="/tmp/prism_runtime.log"; fi
+    mkdir -p "$(dirname "${LOG_FILE}")"
 }
 
-success() {
-    echo -e "${G}[ OK ]${N} $1"
-    log_info "$1"
-}
-
-warn() {
-    echo -e "${Y}[WARN]${N} $1"
-    log_warn "$1"
-}
-
-error() {
-    echo -e "${R}[ERR ]${N} $1"
-    log_error "$1"
-}
+info() { _ensure_log; echo -e "${B}[INFO]${N} $1"; log_info "$1"; }
+success() { _ensure_log; echo -e "${G}[ OK ]${N} $1"; log_info "$1"; }
+warn() { _ensure_log; echo -e "${Y}[WARN]${N} $1"; log_warn "$1"; }
+error() { _ensure_log; echo -e "${R}[ERR ]${N} $1"; log_error "$1"; }
 
 run_step() {
     local msg="$1"
     local cmd="$2"
+    _ensure_log
     
     echo -ne "${B}[....]${N} ${msg}..."
     
@@ -72,21 +63,26 @@ run_step() {
     local delay=0.1
     local spinstr='|/-\'
     
-    tput civis
+    local has_tput=false
+    if command -v tput &>/dev/null; then has_tput=true; fi
+
+    trap 'if [[ "$has_tput" == "true" ]]; then tput cnorm; fi; kill $pid 2>/dev/null; echo -e "\n${R}[ABORT]${N} 用戶終止操作"; exit 1' SIGINT SIGTERM
+
+    if [[ "$has_tput" == "true" ]]; then tput civis; fi
     
     while kill -0 "$pid" 2>/dev/null; do
         local temp=${spinstr#?}
-        
         printf "\r${P}[ %c  ]${N} ${msg}..." "$spinstr"
-        
         local spinstr=$temp${spinstr%"$temp"}
         sleep $delay
     done
     
+    trap - SIGINT SIGTERM
+    
     wait $pid
     local exit_code=$?
     
-    tput cnorm
+    if [[ "$has_tput" == "true" ]]; then tput cnorm; fi
     
     printf "\r\033[K"
     
@@ -97,6 +93,6 @@ run_step() {
         echo -e "${R}[FAIL]${N} ${msg}"
         log_error "Step failed: $msg"
         echo -e "${R}詳細錯誤: ${LOG_FILE}${N}"
-        exit 1
+        return 1
     fi
 }
