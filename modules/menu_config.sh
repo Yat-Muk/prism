@@ -344,20 +344,20 @@ submenu_config() {
     echo -e " ${P}>>> 配置與協議管理${N}"
     echo -e "${SEP}"
     echo -e "  ${P}1.${N} ${W}協議管理${N}          ${D}(開啟/關閉 特定協議)${N}"
-    echo -e "  ${P}2.${N} ${R}重置 所有配置${N}     ${D}(重置所有端口/密鑰)${N}"
-    echo -e "  ${P}3.${N} ${W}更換 Reality 偽裝${N} ${D}(SNI)${N}"
-    echo -e "  ${P}4.${N} ${W}更換 全協議 UUID${N}"
-    echo -e "  ${P}5.${N} ${W}更換 端口${N}"
+    echo -e "  ${P}2.${N} ${W}更換 Reality 偽裝${N} ${D}(SNI)${N}"
+    echo -e "  ${P}3.${N} ${W}更換 全協議 UUID${N}"
+    echo -e "  ${P}4.${N} ${W}更換 端口${N}"
+    echo -e "  ${P}5.${N} ${R}重置 所有配置${N}     ${D}(重置所有端口/密鑰)${N}"
     echo -e "${SEP}"
     echo -e "  ${P}0.${N} 返回上級菜單"
     echo -e "${SEP}"
     echo -ne " 請輸入選項: "; read -r sub_choice
     case "${sub_choice}" in
         1) submenu_protocol_switch ;;
-        2) action_reset_all ;;
-        3) change_reality_sni ;;
-        4) change_uuid ;;
-        5) change_port_menu ;;
+        2) change_reality_sni ;;
+        3) change_uuid ;;
+        4) change_port_menu ;;
+        5) action_reset_all ;;
         0) show_menu ;;
         *) submenu_config ;;
     esac
