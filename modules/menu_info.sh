@@ -33,7 +33,7 @@ p_kv() {
     local key="$1"
     local val="$2"
     
-    local width=28 
+    local width=22
     
     local padding=$(awk -v str="$key" -v w="$width" 'BEGIN {
         len = length(str);
