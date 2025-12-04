@@ -19,16 +19,16 @@ source "${BASE_DIR}/core/sys.sh"
 if [[ -f "${BASE_DIR}/modules/kernel.sh" ]]; then
     source "${BASE_DIR}/modules/kernel.sh"
 else
-    echo -e "${R}[Err] 內核模塊丟失${N}"
+    echo -e "${R}[Err] 內核模塊丟失 (Kernel module missing)${N}"
 fi
 
 submenu_core_upgrade() {
     while true; do
         clear; print_banner
-        echo -e " ${B}>>> 核心升級/切換${N}"
-        echo -e "================================================="
-        echo -e " ${Y}正在獲取最新版本信息，請稍候...${N}"
+        echo -e " ${B}>>> 核心管理 (Core Management)${N}"
+        echo -e "${SEP}"
         
+        echo -ne " 正在獲取版本信息..."
         local current_ver="未安裝"
         if [[ -f "${SINGBOX_BIN}" ]]; then
             current_ver=$(${SINGBOX_BIN} version 2>/dev/null | grep "sing-box version" | awk '{print $3}')
@@ -37,43 +37,39 @@ submenu_core_upgrade() {
         local latest_stable=$(get_remote_version "release")
         local latest_beta=$(get_remote_version "prerelease")
         
-        clear; print_banner
-        echo -e " ${B}>>> 核心升級/切換${N}"
-        echo -e "================================================="
-        echo -e "  當前版本: ${C}${current_ver}${N}"
-        echo -e "  最新正式: ${G}${latest_stable}${N}"
-        echo -e "  最新測試: ${Y}${latest_beta}${N}"
-        echo -e "------------------------------------"
-        echo -e "  1. 升級/切換最新正式版 ${G}${latest_stable}${N}"
-        echo -e "  2. 升級/切換最新測試版 ${Y}${latest_beta}${N}"
-        echo -e "  3. 切換指定版本號 ${D}(建議1.10.0以上)${N}"
-        echo -e "  0. 返回"
-        echo -e "================================================="
+        printf "\r\033[K"
+        
+        echo -e " 當前版本: ${C}${current_ver}${N}"
+        echo -e " 最新正式: ${G}${latest_stable}${N}"
+        echo -e " 最新預覽: ${Y}${latest_beta}${N}"
+        echo -e "${SEP}"
+        echo -e "  ${P}1.${N} ${W}安裝/更新 正式版${N}"
+        echo -e "  ${P}2.${N} ${W}安裝/更新 預覽版 (Pre-release)${N}"
+        echo -e "  ${P}3.${N} ${W}安裝 指定版本${N}"
+        echo -e "${SEP}"
+        echo -e "  ${P}0.${N} 返回上級菜單"
+        echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r choice
         
         case "$choice" in
             1) 
-                if [[ "$latest_stable" == "N/A" ]]; then
-                    error "無法獲取版本信息"
-                else
-                    install_singbox_core "${latest_stable}" || true
-                fi
+                if [[ "$latest_stable" == "N/A" ]]; then error "無法獲取版本"; sleep 1; continue; fi
+                install_singbox_core "${latest_stable}" || true
                 read -p "按回車繼續..." 
                 ;;
             2) 
-                if [[ "$latest_beta" == "N/A" ]]; then
-                    error "無法獲取版本信息"
-                else
-                    install_singbox_core "${latest_beta}" || true
-                fi
+                if [[ "$latest_beta" == "N/A" ]]; then error "無法獲取版本"; sleep 1; continue; fi
+                install_singbox_core "${latest_beta}" || true
                 read -p "按回車繼續..." 
                 ;;
             3) 
-                read -p "請輸入版本號 (如 v1.12.0): " input_ver
+                echo ""
+                read -p "請輸入版本號 (如 v1.12.0，輸入 0 取消): " input_ver
+                if [[ "$input_ver" == "0" ]]; then continue; fi
                 if [[ -n "$input_ver" ]]; then
                     install_singbox_core "${input_ver}" || true
                 else
-                    error "版本號不能為空"
+                    warn "輸入為空"
                 fi
                 read -p "按回車繼續..." 
                 ;;
@@ -85,9 +81,9 @@ submenu_core_upgrade() {
 
 check_script_update() {
     clear; print_banner
-    echo -e " ${B}>>> 檢查腳本更新${N}"
-    echo -e "================================================="
-    echo -e " 正在獲取版本信息..."
+    echo -e " ${B}>>> 腳本更新 (Script Update)${N}"
+    echo -e "${SEP}"
+    echo -e " 正在檢查更新..."
     
     local ts=$(date +%s)
     local version_url="https://raw.githubusercontent.com/Yat-Muk/prism/main/version?t=${ts}"
@@ -107,29 +103,29 @@ check_script_update() {
         local_ver=$(head -n 1 "${WORK_DIR}/version")
     fi
     
-    echo -e " 當前版本: ${C}${PROJECT_VERSION}${N}"
+    echo -e " 當前版本: ${C}${local_ver}${N}"
     echo -e " 最新版本: ${G}${remote_ver:-未知}${N}"
-    echo -e "-------------------------------------------------"
+    echo -e "${D}------------------------------------${N}"
     
     if [[ -z "$remote_ver" ]]; then
-        warn "未能獲取到有效的版本號。"
+        warn "獲取遠端版本失敗。"
     else
-        echo -e " ${Y}更新內容 (Changelog):${N}"
+        echo -e " ${Y}更新日誌 (Changelog):${N}"
         echo -e "${changelog}"
-        echo -e "-------------------------------------------------"
+    fi
+    echo -e "${SEP}"
+    
+    local prompt_msg="是否立即更新腳本? [y/N]"
+    if [[ "$remote_ver" == "$local_ver" ]]; then
+        echo -e " ${G}當前已是最新版本。${N}"
+        prompt_msg="是否強制重新安裝? [y/N]"
     fi
     
-    if [[ "$remote_ver" == "$PROJECT_VERSION" ]]; then
-        echo -e " ${G}當前已是最新版本。${N}"
-        echo -ne " 是否強制重新安裝? [y/N]: "; read -r force_opt
-        if [[ "$force_opt" != "y" && "$force_opt" != "Y" ]]; then return; fi
-    else
-        echo -ne " ${P}是否立即更新腳本? [y/N]: ${N}"; read -r update_opt
-        if [[ "$update_opt" != "y" && "$update_opt" != "Y" ]]; then 
-            info "已取消更新。"
-            read -p "按回車返回..."
-            return
-        fi
+    echo -ne " ${prompt_msg}: "; read -r update_opt
+    if [[ "$update_opt" != "y" && "$update_opt" != "Y" ]]; then 
+        echo -e " 操作已取消。"
+        read -p "按回車返回..."
+        return
     fi
     
     perform_script_update
@@ -137,7 +133,7 @@ check_script_update() {
 
 perform_script_update() {
     echo ""
-    info "正在獲取最新 Prism 安裝器..."
+    info "正在拉取最新安裝腳本..."
     
     if [ -d "${BASE_DIR}/.git" ]; then
         echo -e "${Y}[Dev] 檢測到 Git 環境，嘗試 git pull...${N}"
@@ -150,13 +146,14 @@ perform_script_update() {
         
         if wget -q -O "${BASE_DIR}/install.sh" "${update_url}"; then
             chmod +x "${BASE_DIR}/install.sh"
-            success "引導腳本下載成功，正在執行全量更新..."
+            success "安裝器更新成功，正在執行全量更新..."
             sleep 1
             
             exec bash "${BASE_DIR}/install.sh" update
         else
-            error "下載失敗，請檢查網絡連接 (GitHub Raw)"
-            read -p "按回車返回主菜單..."; show_menu; return
+            error "下載失敗 (wget error)"
+            read -p "按回車返回..."
+            return
         fi
     fi
 }
@@ -165,17 +162,16 @@ submenu_core() {
     while true; do
         clear; print_banner
         echo -e " ${B}>>> 核心與腳本管理${N}"
-        echo -e "================================================="
-        echo -e "  1. 核心升級/切換 ${D}(可指定版本)${N}"
-        echo -e "  2. 腳本升級"
-        echo -e "  0. 返回"
-        echo -e "================================================="
+        echo -e "${SEP}"
+        echo -e "  ${P}1.${N} ${W}核心版本管理${N}      ${D}(升級/降級 Sing-box)${N}"
+        echo -e "  ${P}2.${N} ${W}腳本更新${N}          ${D}(檢查 Prism 更新)${N}"
+        echo -e "${SEP}"
+        echo -e "  ${P}0.${N} 返回上級菜單"
+        echo -e "${SEP}"
         echo -ne " 請輸入選項: "; read -r choice
         case "$choice" in
             1) submenu_core_upgrade ;;
-            2) check_script_update
-               break
-               ;;
+            2) check_script_update; break ;;
             0) break ;;
             *) error "無效輸入"; sleep 1 ;;
         esac
