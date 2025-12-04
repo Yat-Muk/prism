@@ -63,7 +63,7 @@ prism
   ------------------------------------
   12.卸載 Prism       (刪除程序和配置)
 ```
-![截圖 2025-12-04 16 51 16](https://github.com/user-attachments/assets/8c942c36-cdf0-4671-9e0e-1be01b738573)
+<img width="466" height="538" alt="截圖 2025-12-04 16 51 16" src="https://github.com/user-attachments/assets/8c942c36-cdf0-4671-9e0e-1be01b738573" />
 
 
 ## 🔧 進階功能說明
