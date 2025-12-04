@@ -30,7 +30,6 @@ check_network_stack() {
 
 init_iptables_chain() {
     if ! command -v iptables &> /dev/null; then return; fi
-    
     local chain_name="PRISM_HOPPING"
     
     if ! iptables -t nat -N "${chain_name}" 2>/dev/null; then true; fi
@@ -39,17 +38,25 @@ init_iptables_chain() {
     if ! iptables -t nat -C PREROUTING -p udp -j "${chain_name}" 2>/dev/null; then
         iptables -t nat -A PREROUTING -p udp -j "${chain_name}"
     fi
-    
     if ! iptables -C INPUT -p udp -j "${chain_name}" 2>/dev/null; then
         iptables -A INPUT -p udp -j "${chain_name}"
     fi
 }
 
+clean_legacy_rules() {
+    if ! command -v iptables &> /dev/null; then return; fi
+    
+    iptables -t nat -S PREROUTING | grep "prism_" | grep -v "PRISM_HOPPING" | sed 's/-A/-D/' | while read -r rule; do
+        iptables -t nat $rule >/dev/null 2>&1
+    done
+    
+    iptables -S INPUT | grep "prism_" | grep -v "PRISM_HOPPING" | sed 's/-A/-D/' | while read -r rule; do
+        iptables $rule >/dev/null 2>&1
+    done
+}
+
 add_hopping_rule() {
-    local start=$1
-    local end=$2
-    local target_port=$3
-    local comment=$4
+    local start=$1; local end=$2; local target_port=$3; local comment=$4
     local chain_name="PRISM_HOPPING"
 
     if [[ -n "$start" && -n "$end" && "$start" != "0" ]]; then
@@ -63,7 +70,9 @@ update_all_port_hopping() {
     if ! command -v iptables &> /dev/null; then return; fi
 
     local chain_name="PRISM_HOPPING"
-    
+
+    clean_legacy_rules
+
     init_iptables_chain
 
     iptables -t nat -F "${chain_name}"
