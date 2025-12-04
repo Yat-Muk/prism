@@ -111,7 +111,6 @@ EOF
 
 gen_dns_config() {
     local extra_dns_rules=""
-    
     if [[ "${PRISM_SNI_ENABLE:-}" == "true" && -n "${PRISM_SNI_IP:-}" ]] && [[ -f "${RULE_DIR}/sni.list" ]]; then
         local sni_domains=$(jq -R . "${RULE_DIR}/sni.list" | jq -s . | sed 's/null//g')
         if [[ "$sni_domains" != "[]" ]]; then
@@ -150,7 +149,6 @@ EOF
         local warp_bind="172.16.0.2"
         local warp_reserved="${PRISM_WARP_RESERVED:-[0,0,0]}"
         [[ -z "$warp_reserved" ]] && warp_reserved="[0,0,0]"
-        
         cat > "${PARTS_DIR}/02_outbounds_warp.json" <<EOF
 {
   "outbounds": [{
@@ -243,17 +241,16 @@ EOF
 
 gen_inbounds_config() {
     rm -f "${PARTS_DIR}/04_inbounds"*.json
-    local cert_info=$(get_cert_paths "acme")
-
+    
     if [[ "${PRISM_ENABLE_REALITY_VISION:-}" == "true" ]]; then
         cat > "${PARTS_DIR}/04_inbounds_reality_vision.json" <<EOF
-{ "inbounds": [{ "type": "vless", "tag": "vless-reality-vision", "listen": "::", "listen_port": ${PRISM_PORT_REALITY_VISION:-443}, "users": [{ "uuid": "${PRISM_UUID:-}", "flow": "xtls-rprx-vision" }], "tls": { "enabled": true, "server_name": "${PRISM_DEST:-}", "reality": { "enabled": true, "handshake": { "server": "${PRISM_DEST:-}", "server_port": ${PRISM_DEST_PORT:-443} }, "private_key": "${PRISM_PRIVATE_KEY:-}", "short_id": ["${PRISM_SHORT_ID:-}"] } } }] }
+{ "inbounds": [{ "type": "vless", "tag": "vless-reality-vision", "listen": "::", "listen_port": ${PRISM_PORT_REALITY_VISION:-443}, "users": [{ "uuid": "${PRISM_UUID}", "flow": "xtls-rprx-vision" }], "tls": { "enabled": true, "server_name": "${PRISM_DEST}", "reality": { "enabled": true, "handshake": { "server": "${PRISM_DEST}", "server_port": ${PRISM_DEST_PORT:-443} }, "private_key": "${PRISM_PRIVATE_KEY}", "short_id": ["${PRISM_SHORT_ID}"] } } }] }
 EOF
     fi
 
     if [[ "${PRISM_ENABLE_REALITY_GRPC:-}" == "true" ]]; then
         cat > "${PARTS_DIR}/04_inbounds_reality_grpc.json" <<EOF
-{ "inbounds": [{ "type": "vless", "tag": "vless-reality-grpc", "listen": "::", "listen_port": ${PRISM_PORT_REALITY_GRPC:-8443}, "users": [{ "uuid": "${PRISM_UUID:-}" }], "transport": { "type": "grpc", "service_name": "grpc" }, "tls": { "enabled": true, "server_name": "${PRISM_DEST:-}", "reality": { "enabled": true, "handshake": { "server": "${PRISM_DEST:-}", "server_port": ${PRISM_DEST_PORT:-443} }, "private_key": "${PRISM_PRIVATE_KEY:-}", "short_id": ["${PRISM_SHORT_ID:-}"] } } }] }
+{ "inbounds": [{ "type": "vless", "tag": "vless-reality-grpc", "listen": "::", "listen_port": ${PRISM_PORT_REALITY_GRPC:-8443}, "users": [{ "uuid": "${PRISM_UUID}" }], "transport": { "type": "grpc", "service_name": "grpc" }, "tls": { "enabled": true, "server_name": "${PRISM_DEST}", "reality": { "enabled": true, "handshake": { "server": "${PRISM_DEST}", "server_port": ${PRISM_DEST_PORT:-443} }, "private_key": "${PRISM_PRIVATE_KEY}", "short_id": ["${PRISM_SHORT_ID}"] } } }] }
 EOF
     fi
 
@@ -261,7 +258,7 @@ EOF
         local cert_info=$(get_cert_paths "${PRISM_HY2_CERT_MODE:-self_signed}")
         local crt_path=$(echo "$cert_info" | cut -d'|' -f1); local key_path=$(echo "$cert_info" | cut -d'|' -f2)
         cat > "${PARTS_DIR}/04_inbounds_hy2.json" <<EOF
-{ "inbounds": [{ "type": "hysteria2", "tag": "hy2-in", "listen": "::", "listen_port": ${PRISM_PORT_HY2:-8888}, "users": [{ "password": "${PRISM_HY2_PASSWORD:-}" }], "tls": { "enabled": true, "certificate_path": "${crt_path}", "key_path": "${key_path}" } }] }
+{ "inbounds": [{ "type": "hysteria2", "tag": "hy2-in", "listen": "::", "listen_port": ${PRISM_PORT_HY2:-8888}, "users": [{ "password": "${PRISM_HY2_PASSWORD}" }], "tls": { "enabled": true, "alpn": ["h3"], "certificate_path": "${crt_path}", "key_path": "${key_path}" } }] }
 EOF
     fi
 
@@ -269,27 +266,63 @@ EOF
         local cert_info=$(get_cert_paths "${PRISM_TUIC_CERT_MODE:-self_signed}")
         local crt_path=$(echo "$cert_info" | cut -d'|' -f1); local key_path=$(echo "$cert_info" | cut -d'|' -f2)
         cat > "${PARTS_DIR}/04_inbounds_tuic.json" <<EOF
-{ "inbounds": [{ "type": "tuic", "tag": "tuic-in", "listen": "::", "listen_port": ${PRISM_PORT_TUIC:-9999}, "users": [{ "uuid": "${PRISM_TUIC_UUID:-}", "password": "${PRISM_TUIC_PASSWORD:-}" }], "congestion_control": "bbr", "tls": { "enabled": true, "certificate_path": "${crt_path}", "key_path": "${key_path}" } }] }
+{ "inbounds": [{ "type": "tuic", "tag": "tuic-in", "listen": "::", "listen_port": ${PRISM_PORT_TUIC:-9999}, "users": [{ "uuid": "${PRISM_TUIC_UUID}", "password": "${PRISM_TUIC_PASSWORD}" }], "congestion_control": "bbr", "tls": { "enabled": true, "alpn": ["h3"], "certificate_path": "${crt_path}", "key_path": "${key_path}" } }] }
 EOF
     fi
 
     if [[ "${PRISM_ENABLE_ANYTLS:-}" == "true" ]]; then
         local cert_info=$(get_cert_paths "${PRISM_ANYTLS_CERT_MODE:-self_signed}")
         local crt_path=$(echo "$cert_info" | cut -d'|' -f1); local key_path=$(echo "$cert_info" | cut -d'|' -f2)
+        
         cat > "${PARTS_DIR}/04_inbounds_anytls.json" <<EOF
-{ "inbounds": [{ "type": "anytls", "tag": "anytls-in", "listen": "::", "listen_port": ${PRISM_PORT_ANYTLS:-10443}, "users": [{ "password": "${PRISM_ANYTLS_PASSWORD:-}" }], "tls": { "enabled": true, "certificate_path": "${crt_path}", "key_path": "${key_path}" } }] }
+{ 
+  "inbounds": [{ 
+    "type": "anytls", 
+    "tag": "anytls-in", 
+    "listen": "::", 
+    "listen_port": ${PRISM_PORT_ANYTLS:-10443}, 
+    "users": [{ "name": "prism", "password": "${PRISM_ANYTLS_PASSWORD}" }], 
+    "tls": { 
+      "enabled": true, 
+      "server_name": "${PRISM_ACME_DOMAIN:-www.bing.com}", 
+      "certificate_path": "${crt_path}", 
+      "key_path": "${key_path}" 
+    } 
+  }] 
+}
 EOF
     fi
 
     if [[ "${PRISM_ENABLE_ANYTLS_REALITY:-}" == "true" ]]; then
         cat > "${PARTS_DIR}/04_inbounds_anytls_reality.json" <<EOF
-{ "inbounds": [{ "type": "anytls", "tag": "anytls-reality-in", "listen": "::", "listen_port": ${PRISM_PORT_ANYTLS_REALITY:-20443}, "users": [{ "password": "${PRISM_ANYTLS_REALITY_PASSWORD:-}" }], "tls": { "enabled": true, "server_name": "${PRISM_DEST:-}", "reality": { "enabled": true, "handshake": { "server": "${PRISM_DEST:-}", "server_port": ${PRISM_DEST_PORT:-443} }, "private_key": "${PRISM_PRIVATE_KEY:-}", "short_id": ["${PRISM_SHORT_ID:-}"] } } }] }
+{ 
+  "inbounds": [{ 
+    "type": "anytls", 
+    "tag": "anytls-reality-in", 
+    "listen": "::", 
+    "listen_port": ${PRISM_PORT_ANYTLS_REALITY:-20443}, 
+    "users": [{ "name": "prism", "password": "${PRISM_ANYTLS_REALITY_PASSWORD}" }], 
+    "tls": { 
+      "enabled": true, 
+      "server_name": "${PRISM_DEST}", 
+      "reality": { 
+        "enabled": true, 
+        "handshake": { 
+          "server": "${PRISM_DEST}", 
+          "server_port": ${PRISM_DEST_PORT:-443} 
+        }, 
+        "private_key": "${PRISM_PRIVATE_KEY}", 
+        "short_id": ["${PRISM_SHORT_ID}"] 
+      } 
+    } 
+  }] 
+}
 EOF
     fi
 
     if [[ "${PRISM_ENABLE_SHADOWTLS:-}" == "true" ]]; then
         cat > "${PARTS_DIR}/04_inbounds_shadowtls.json" <<EOF
-{ "inbounds": [ { "type": "shadowtls", "tag": "shadowtls-in", "listen": "::", "listen_port": ${PRISM_PORT_SHADOWTLS:-30443}, "version": 3, "users": [{ "password": "${PRISM_SHADOWTLS_PASSWORD:-}" }], "handshake": { "server": "${PRISM_DEST:-www.microsoft.com}", "server_port": 443 }, "detour": "vless-inner" }, { "type": "vless", "tag": "vless-inner", "listen": "127.0.0.1", "listen_port": ${PRISM_PORT_INNER_VLESS:-40443}, "users": [{ "uuid": "${PRISM_UUID:-}" }] } ] }
+{ "inbounds": [ { "type": "shadowtls", "tag": "shadowtls-in", "listen": "::", "listen_port": ${PRISM_PORT_SHADOWTLS:-30443}, "version": 3, "users": [{ "password": "${PRISM_SHADOWTLS_PASSWORD}" }], "handshake": { "server": "${PRISM_DEST}", "server_port": 443 }, "detour": "vless-inner" }, { "type": "vless", "tag": "vless-inner", "listen": "127.0.0.1", "listen_port": ${PRISM_PORT_INNER_VLESS:-40443}, "users": [{ "uuid": "${PRISM_UUID}" }] } ] }
 EOF
     fi
 
