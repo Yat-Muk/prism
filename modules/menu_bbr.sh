@@ -19,8 +19,18 @@ source "${BASE_DIR}/core/sys.sh"
 
 get_bbr_info() {
     current_kernel=$(uname -r)
-    current_cc=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null)
-    =$(sysctl -n net.core.default_qdisc 2>/dev/null)
+    
+    if [[ -r /proc/sys/net/ipv4/tcp_congestion_control ]]; then
+        current_cc=$(cat /proc/sys/net/ipv4/tcp_congestion_control)
+    else
+        current_cc=$(sysctl -n net.ipv4.tcp_congestion_control 2>/dev/null)
+    fi
+
+    if [[ -r /proc/sys/net/core/default_qdisc ]]; then
+        current_qdisc=$(cat /proc/sys/net/core/default_qdisc)
+    else
+        current_qdisc=$(sysctl -n net.core.default_qdisc 2>/dev/null)
+    fi
     
     current_bbr_ver="${D}未知/未啟用${N}"
     if [[ "$current_cc" == "bbr" ]]; then
@@ -107,11 +117,10 @@ enable_bbr_only() {
         sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
         sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf
     fi
-    
     echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
     echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
     sysctl -p >/dev/null 2>&1
-    success "BBR 已啟用 (請查看上方狀態)"
+    success "BBR 已啟用"
     sleep 1.5
 }
 
@@ -136,8 +145,11 @@ bbr_traffic_monitor() {
         return
     fi
 
-    tput civis
-    trap 'tput cnorm; return' INT
+    local has_tput=false
+    if command -v tput &>/dev/null; then has_tput=true; fi
+
+    if [[ "$has_tput" == "true" ]]; then tput civis; fi
+    trap 'if [[ "$has_tput" == "true" ]]; then tput cnorm; fi; return' INT
 
     while true; do
         clear
