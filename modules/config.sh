@@ -292,6 +292,7 @@ EOF
     "listen": "::", 
     "listen_port": ${PRISM_PORT_ANYTLS:-10443}, 
     "users": [{ "name": "prism", "password": "${PRISM_ANYTLS_PASSWORD}" }], 
+    "padding_scheme": [ "stop=8", "0=30-30", "1=100-400", "2=400-500,c,500-1000,c,500-1000,c,500-1000,c,500-1000", "3=9-9,500-1000", "4=500-1000", "5=500-1000", "6=500-1000", "7=500-1000" ],
     "tls": { 
       "enabled": true, 
       "server_name": "${PRISM_ACME_DOMAIN:-www.bing.com}", 
@@ -305,27 +306,6 @@ EOF
 
     if [[ "${PRISM_ENABLE_ANYTLS_REALITY:-}" == "true" ]]; then
         cat > "${PARTS_DIR}/04_inbounds_anytls_reality.json" <<EOF
-{ 
-  "inbounds": [{ 
-    "type": "anytls", 
-    "tag": "anytls-in", 
-    "listen": "::", 
-    "listen_port": ${PRISM_PORT_ANYTLS:-10443}, 
-    "users": [{ "name": "prism", "password": "${PRISM_ANYTLS_PASSWORD}" }], 
-    "padding_scheme": [ "stop=8", "0=30-30", "1=100-400", "2=400-500,c,500-1000,c,500-1000,c,500-1000,c,500-1000", "3=9-9,500-1000", "4=500-1000", "5=500-1000", "6=500-1000", "7=500-1000" ],
-    "tls": { 
-      "enabled": true, 
-      "server_name": "${PRISM_ACME_DOMAIN:-www.bing.com}", 
-      "certificate_path": "${crt_path}", 
-      "key_path": "${key_path}" 
-    } 
-  }] 
-}
-EOF
-    fi
-
-    if [[ "${PRISM_ENABLE_SHADOWTLS:-}" == "true" ]]; then
-        cat > "${PARTS_DIR}/04_inbounds_shadowtls.json" <<EOF
 { 
   "inbounds": [{ 
     "type": "anytls", 
