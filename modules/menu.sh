@@ -62,6 +62,7 @@ get_outbound_mode_text() {
 
 show_menu() {
     clear
+    if [[ -z "${OS_RELEASE}" ]]; then detect_os; fi
     if [[ -z "${NETWORK_STACK}" ]]; then check_network_stack; fi
     if [[ -f "${CONFIG_DIR}/secrets.env" ]]; then source "${CONFIG_DIR}/secrets.env"; fi
     
