@@ -215,7 +215,8 @@ display_links_and_qr() {
         echo -e "${W}${b64_sub}${N}"
         echo -e "${SEP}"
     fi
-    read -p " 按回車返回..." 
+    read -p " 按回車返回主菜單..." 
+    show_menu
 }
 
 generate_json_outbound_object() {
@@ -330,7 +331,8 @@ EOF
     rm -f "${WORK_DIR}/temp_client.json"
 
     echo -e "${SEP}"
-    read -p " 按回車返回..."
+    read -p " 按回車返回主菜單..."
+    show_menu
 }
 
 show_node_info() {
