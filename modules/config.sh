@@ -64,7 +64,10 @@ manage_secrets() {
     if [[ -z "${PRISM_UUID}" ]]; then
         local new_uuid=$(${SINGBOX_BIN} generate uuid)
         set_env_default "PRISM_UUID" "$new_uuid"
-        set_env_default "PRISM_TUIC_UUID" "$new_uuid"
+    fi
+
+    if [[ -z "${PRISM_TUIC_UUID}" ]]; then
+        set_env_default "PRISM_TUIC_UUID" "${PRISM_UUID}"
     fi
     
     if [[ -z "${PRISM_PRIVATE_KEY}" ]]; then
