@@ -229,7 +229,7 @@ submenu_protocol_cert_mode() {
             local enable_var="${protocols[i+2]}"
             
             if [[ "${!enable_var:-false}" == "true" ]]; then
-                local current_mode="${!mode_var:-acme}"
+                local current_mode="${!mode_var:-self_signed}"
                 local mode_display=""
                 
                 if [[ "$current_mode" == "acme" ]]; then
