@@ -110,6 +110,15 @@ EOF
 }
 
 gen_dns_config() {
+    local extra_dns_rules=""
+    
+    if [[ "${PRISM_SNI_ENABLE:-}" == "true" && -n "${PRISM_SNI_IP:-}" ]] && [[ -f "${RULE_DIR}/sni.list" ]]; then
+        local sni_domains=$(jq -R . "${RULE_DIR}/sni.list" | jq -s . | sed 's/null//g')
+        if [[ "$sni_domains" != "[]" ]]; then
+            extra_dns_rules="{ \"domain\": ${sni_domains}, \"rewrite_ip_address\": [\"${PRISM_SNI_IP}\"] },"
+        fi
+    fi
+
     cat > "${PARTS_DIR}/01_dns.json" <<EOF
 {
   "dns": {
@@ -117,7 +126,10 @@ gen_dns_config() {
       { "tag": "dns_google", "server": "8.8.8.8", "type": "udp" },
       { "tag": "dns_local", "type": "local" }
     ],
-    "rules": [ { "rule_set": "geosite-cn", "server": "dns_local" } ],
+    "rules": [ 
+      ${extra_dns_rules}
+      { "rule_set": "geosite-cn", "server": "dns_local" } 
+    ],
     "final": "dns_google",
     "strategy": "${PRISM_OUTBOUND_MODE:-prefer_ipv4}"
   }
