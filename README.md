@@ -93,5 +93,3 @@ prism
 
 -----
 
-**Author:** Yat-muk  
-**Project URL:** [https://github.com/Yat-Muk/prism](https://www.google.com/search?q=https://github.com/Yat-Muk/prism)
