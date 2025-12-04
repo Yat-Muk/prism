@@ -98,9 +98,9 @@ manage_secrets() {
     if [[ -z "${PRISM_ANYTLS_REALITY_PASSWORD}" ]]; then PRISM_ANYTLS_REALITY_PASSWORD=$(openssl rand -hex 16); save_needed=true; fi
     if [[ -z "${PRISM_SHADOWTLS_PASSWORD}" ]]; then PRISM_SHADOWTLS_PASSWORD=$(openssl rand -hex 16); save_needed=true; fi
     
-    if [[ -z "${PRISM_HY2_CERT_MODE}" ]]; then PRISM_HY2_CERT_MODE="acme"; save_needed=true; fi
-    if [[ -z "${PRISM_TUIC_CERT_MODE}" ]]; then PRISM_TUIC_CERT_MODE="acme"; save_needed=true; fi
-    if [[ -z "${PRISM_ANYTLS_CERT_MODE}" ]]; then PRISM_ANYTLS_CERT_MODE="acme"; save_needed=true; fi
+    if [[ -z "${PRISM_HY2_CERT_MODE}" ]]; then PRISM_HY2_CERT_MODE="self_signed"; save_needed=true; fi
+    if [[ -z "${PRISM_TUIC_CERT_MODE}" ]]; then PRISM_TUIC_CERT_MODE="self_signed"; save_needed=true; fi
+    if [[ -z "${PRISM_ANYTLS_CERT_MODE}" ]]; then PRISM_ANYTLS_CERT_MODE="self_signed"; save_needed=true; fi
 
     if [[ -z "${PRISM_OUTBOUND_MODE}" ]]; then PRISM_OUTBOUND_MODE="prefer_ipv4"; save_needed=true; fi
 
@@ -337,7 +337,7 @@ EOF
     fi
 
     if [[ "${PRISM_ENABLE_HY2:-}" == "true" ]]; then
-        local cert_info=$(get_cert_paths "${PRISM_HY2_CERT_MODE:-acme}")
+        local cert_info=$(get_cert_paths "${PRISM_HY2_CERT_MODE:-self_signed}")
         local crt_path=$(echo "$cert_info" | cut -d'|' -f1); local key_path=$(echo "$cert_info" | cut -d'|' -f2)
         cat > "${PARTS_DIR}/04_inbounds_hy2.json" <<EOF
 { "inbounds": [{ "type": "hysteria2", "tag": "hy2-in", "listen": "::", "listen_port": ${PRISM_PORT_HY2:-8888}, "users": [{ "password": "${PRISM_HY2_PASSWORD:-}" }], "tls": { "enabled": true, "certificate_path": "${crt_path}", "key_path": "${key_path}" } }] }
@@ -345,7 +345,7 @@ EOF
     fi
 
     if [[ "${PRISM_ENABLE_TUIC:-}" == "true" ]]; then
-        local cert_info=$(get_cert_paths "${PRISM_TUIC_CERT_MODE:-acme}")
+        local cert_info=$(get_cert_paths "${PRISM_TUIC_CERT_MODE:-self_signed}")
         local crt_path=$(echo "$cert_info" | cut -d'|' -f1); local key_path=$(echo "$cert_info" | cut -d'|' -f2)
         cat > "${PARTS_DIR}/04_inbounds_tuic.json" <<EOF
 { "inbounds": [{ "type": "tuic", "tag": "tuic-in", "listen": "::", "listen_port": ${PRISM_PORT_TUIC:-9999}, "users": [{ "uuid": "${PRISM_TUIC_UUID:-}", "password": "${PRISM_TUIC_PASSWORD:-}" }], "congestion_control": "bbr", "tls": { "enabled": true, "certificate_path": "${crt_path}", "key_path": "${key_path}" } }] }
@@ -353,7 +353,7 @@ EOF
     fi
 
     if [[ "${PRISM_ENABLE_ANYTLS:-}" == "true" ]]; then
-        local cert_info=$(get_cert_paths "${PRISM_ANYTLS_CERT_MODE:-acme}")
+        local cert_info=$(get_cert_paths "${PRISM_ANYTLS_CERT_MODE:-self_signed}")
         local crt_path=$(echo "$cert_info" | cut -d'|' -f1); local key_path=$(echo "$cert_info" | cut -d'|' -f2)
         cat > "${PARTS_DIR}/04_inbounds_anytls.json" <<EOF
 { "inbounds": [{ "type": "anytls", "tag": "anytls-in", "listen": "::", "listen_port": ${PRISM_PORT_ANYTLS:-10443}, "users": [{ "password": "${PRISM_ANYTLS_PASSWORD:-}" }], "tls": { "enabled": true, "certificate_path": "${crt_path}", "key_path": "${key_path}" } }] }
