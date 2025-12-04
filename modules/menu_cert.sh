@@ -219,12 +219,12 @@ submenu_protocol_cert_mode() {
     )
 
     while true; do
+        if [[ -f "${CONFIG_DIR}/secrets.env" ]]; then source "${CONFIG_DIR}/secrets.env"; fi
+
         if [[ -z "${PRISM_ACME_DOMAIN:-}" ]]; then
             if [[ -d "${ACME_CERT_DIR}" ]]; then
                 local auto_domain=$(find "${ACME_CERT_DIR}" -name "*.crt" -print -quit | xargs basename -s .crt)
-                if [[ -n "$auto_domain" ]]; then
-                    write_secret_no_apply "PRISM_ACME_DOMAIN" "$auto_domain"
-                fi
+                if [[ -n "$auto_domain" ]]; then write_secret_no_apply "PRISM_ACME_DOMAIN" "$auto_domain"; fi
             fi
         fi
         
@@ -272,6 +272,19 @@ submenu_protocol_cert_mode() {
         
         local changes_made=false
         IFS=',' read -ra ADDR <<< "$input_str"
+        for choice in "${ADDR[@]}"; do
+            if ! [[ "$choice" =~ ^[0-9]+$ ]]; then warn "無效編號: $choice"; continue; fi
+            
+            if [[ -n "${map_index[choice]}" ]]; then
+                local i=${map_index[choice]}
+                local target_var="${protocols[i+1]}"
+                local current_mode="${!target_var:-acme}"
+                local new_mode="acme"
+                if [[ "$current_mode" == "acme" ]]; then new_mode="self_signed"; fi
+                write_secret_no_apply "$target_var" "$new_mode"
+                changes_made=true
+            fi
+        done
         
         for choice in "${ADDR[@]}"; do
             if [[ -n "${map_index[choice]}" ]]; then
