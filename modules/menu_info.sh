@@ -28,7 +28,7 @@ print_qr_block() {
 }
 
 p_kv() {
-    local key="$1"; local val="$2"; local width=28
+    local key="$1"; local val="$2"; local width=20
     local padding=$(awk -v str="$key" -v w="$width" 'BEGIN {
         len = length(str); non_ascii = 0;
         for(i=1; i<=len; i++) { if(substr(str,i,1) ~ /[^\x00-\x7F]/) non_ascii++; }
