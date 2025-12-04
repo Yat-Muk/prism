@@ -30,7 +30,24 @@ print_qr_block() {
 }
 
 p_kv() {
-    printf " %b%-26s%b : %b\n" "${C}" "$1" "${N}" "$2"
+    local key="$1"
+    local val="$2"
+    
+    local width=28 
+    
+    local padding=$(awk -v str="$key" -v w="$width" 'BEGIN {
+        len = length(str);
+        non_ascii = 0;
+        for(i=1; i<=len; i++) {
+            if(substr(str,i,1) ~ /[^\x00-\x7F]/) non_ascii++;
+        }
+        display_width = len + non_ascii;
+        pad_len = w - display_width;
+        if(pad_len < 0) pad_len = 0;
+        printf "%*s", pad_len, "";
+    }')
+    
+    echo -e " ${C}${key}${N}${padding} : ${W}${val}${N}"
 }
 
 show_node_info() {
@@ -212,7 +229,7 @@ show_node_info() {
         print_qr_block "${link}" "AnyReality"
         echo -e "${SEP}"
     fi
-
+    
     if [[ "${PRISM_ENABLE_SHADOWTLS}" == "true" ]]; then
         ((node_count++))
         echo -e " ${G}7. ShadowTLS v3${N} ${D}[Wrapper]${N}"
