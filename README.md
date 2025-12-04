@@ -2,7 +2,6 @@
 
 # Prism Network Stack
 
-![Version](https://img.shields.io/github/v/tag/Yat-Muk/prism?style=flat-square&color=purple&label=version)
 ![Core](https://img.shields.io/badge/Sing--box-v1.10%2B-cyan?style=flat-square)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square)
 
