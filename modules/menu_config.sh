@@ -15,13 +15,24 @@
 if [[ -f "${BASE_DIR}/core/network.sh" ]]; then source "${BASE_DIR}/core/network.sh"; fi
 
 write_secret_no_apply() {
-    local key="$1"; local value="$2"
-    if [[ -f "${CONFIG_DIR}/secrets.env" ]]; then
-        if grep -q "^export ${key}=" "${CONFIG_DIR}/secrets.env"; then
-            sed -i "s|^export ${key}=.*|export ${key}=\"${value}\"|" "${CONFIG_DIR}/secrets.env"
-        else echo "export ${key}=\"${value}\"" >> "${CONFIG_DIR}/secrets.env"; fi
-        export "${key}=${value}"
+    local key="$1"
+    local raw_value="$2"
+    local file="${CONFIG_DIR}/secrets.env"
+    
+    if [[ ! -f "${file}" ]]; then touch "${file}"; fi
+
+    local safe_val="${raw_value//\\/\\\\}"
+    safe_val="${safe_val//\"/\\\"}"
+    safe_val="${safe_val//\$/\\\$}"
+    safe_val="${safe_val//\`/\\\`}"
+
+    if grep -q "^export ${key}=" "${file}"; then
+        sed -i "s|^export ${key}=.*|export ${key}=\"${safe_val}\"|" "${file}"
+    else
+        echo "export ${key}=\"${safe_val}\"" >> "${file}"
     fi
+    
+    export "${key}=${raw_value}"
 }
 
 apply_changes() {
