@@ -376,7 +376,7 @@ EOF
     { "type": "selector", "tag": "🚀 節點選擇", "outbounds": [ "⚡ 自動選擇", ${tags_string}, "direct" ] },
     { "type": "urltest", "tag": "⚡ 自動選擇", "outbounds": [ ${tags_string} ], "url": "http://www.gstatic.com/generate_204", "interval": "3m" },
     ${all_nodes_json},
-    { "type": "direct", "tag": "direct" }, { "type": "block", "tag": "block" }
+    { "type": "direct", "tag": "direct" }
   ]
 }
 EOF
