@@ -142,7 +142,7 @@ check_script_update() {
     local prompt_msg="是否立即更新腳本? [y/N]"
     if [[ "$remote_ver" == "$local_ver" ]]; then
         echo -e " ${G}當前已是最新版本。${N}"
-        prompt_msg="是否強制重新安裝? [y/N]"
+        prompt_msg="是否強制更新腳本? [y/N]"
     fi
     
     echo -ne " ${prompt_msg}: "; read -r update_opt
