@@ -12,9 +12,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
-#!/usr/bin/env bash
-# modules/config.sh - Updated with Shadowsocks-2022 over ShadowTLS
-
 source "${BASE_DIR}/core/env.sh"
 source "${BASE_DIR}/core/log.sh"
 source "${BASE_DIR}/core/ui.sh"
@@ -47,6 +44,16 @@ get_cert_paths() {
         if [[ -f "${acme_crt}" ]] && [[ -f "${acme_key}" ]]; then echo "${acme_crt}|${acme_key}"; return; fi
     fi
     ensure_certificates; echo "${CERT_DIR}/self_signed.crt|${CERT_DIR}/self_signed.key"
+}
+
+is_legacy_core() {
+    if [[ ! -x "${SINGBOX_BIN}" ]]; then return 1; fi
+    local ver=$(${SINGBOX_BIN} version 2>/dev/null | grep "sing-box version" | awk '{print $3}')
+    ver=${ver#v}
+    local major=$(echo "$ver" | cut -d. -f1)
+    local minor=$(echo "$ver" | cut -d. -f2)
+    if [[ "$major" -eq 1 && "$minor" -lt 12 ]]; then return 0; fi
+    return 1
 }
 
 get_padding_scheme_json() {
@@ -144,7 +151,25 @@ gen_dns_config() {
         fi
     fi
 
-    cat > "${PARTS_DIR}/01_dns.json" <<EOF
+    if is_legacy_core; then
+        cat > "${PARTS_DIR}/01_dns.json" <<EOF
+{
+  "dns": {
+    "servers": [
+      { "tag": "dns_google", "address": "8.8.8.8" },
+      { "tag": "dns_local", "address": "local" }
+    ],
+    "rules": [ 
+      ${extra_dns_rules}
+      { "rule_set": "geosite-cn", "server": "dns_local" } 
+    ],
+    "final": "dns_google",
+    "strategy": "${PRISM_OUTBOUND_MODE:-prefer_ipv4}"
+  }
+}
+EOF
+    else
+        cat > "${PARTS_DIR}/01_dns.json" <<EOF
 {
   "dns": {
     "servers": [
@@ -160,11 +185,18 @@ gen_dns_config() {
   }
 }
 EOF
+    fi
 }
 
 gen_outbounds_config() {
     cat > "${PARTS_DIR}/02_outbounds_base.json" <<EOF
-{ "outbounds": [ { "type": "direct", "tag": "direct" }, { "type": "block", "tag": "block" } ] }
+{ 
+  "outbounds": [ 
+    { "type": "direct", "tag": "direct" }, 
+    { "type": "block", "tag": "block" },
+    { "type": "dns", "tag": "dns-out" }
+  ] 
+}
 EOF
 
     cat > "${PARTS_DIR}/02_outbounds_ipv6.json" <<EOF
@@ -241,7 +273,30 @@ gen_route_config() {
         if [[ "$v6_json" != "[]" && -n "$v6_json" ]]; then ipv6_rules="{ \"domain\": ${v6_json}, \"outbound\": \"ipv6-out\" },"; fi
     fi
 
-    cat > "${PARTS_DIR}/03_route.json" <<EOF
+    if is_legacy_core; then
+        cat > "${PARTS_DIR}/03_route.json" <<EOF
+{
+  "route": {
+    "rule_set": [
+      { "tag": "geosite-cn", "type": "remote", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs", "download_detour": "direct" },
+      { "tag": "geoip-cn", "type": "remote", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs", "download_detour": "direct" },
+      { "tag": "geosite-ads", "type": "remote", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs", "download_detour": "direct" }
+    ],
+    "rules": [
+      { "protocol": "dns", "outbound": "dns-out" },
+      ${warp_rules}
+      ${socks5_rules}
+      ${ipv6_rules}
+      { "rule_set": "geosite-ads", "outbound": "block" },
+      { "rule_set": ["geoip-cn", "geosite-cn"], "outbound": "direct" }
+    ],
+    "final": "${final_outbound}",
+    "auto_detect_interface": true
+  }
+}
+EOF
+    else
+        cat > "${PARTS_DIR}/03_route.json" <<EOF
 {
   "route": {
     "rule_set": [
@@ -263,6 +318,7 @@ gen_route_config() {
   }
 }
 EOF
+    fi
 }
 
 gen_inbounds_config() {
@@ -369,18 +425,11 @@ merge_configs() {
     local output_file="${CONFIG_DIR}/config.json"
     if ! command -v jq &> /dev/null; then error "缺少 jq 工具。"; exit 1; fi
     
-    local has_error=false
-    for json_file in "${PARTS_DIR}"/*.json; do
-        if [[ -f "$json_file" ]]; then
-            if ! jq . "$json_file" >/dev/null 2>&1; then
-                error "配置片段語法錯誤: $(basename "$json_file")"
-                has_error=true
-            fi
-        fi
-    done
-    if [[ "$has_error" == "true" ]]; then error "配置合併終止"; return 1; fi
-
     export ENABLE_DEPRECATED_WIREGUARD_OUTBOUND=true
+    export ENABLE_DEPRECATED_LEGACY_DNS_SERVERS=true
+    export ENABLE_DEPRECATED_LEGACY_DOMAIN_STRATEGY_OPTIONS=true
+    export ENABLE_DEPRECATED_SPECIAL_OUTBOUNDS=true
+    
     if jq -s 'reduce .[] as $item ({}; . * $item + 
         (if ($item | has("inbounds")) and (. | has("inbounds")) then {"inbounds": (.inbounds + $item.inbounds)} else {} end) +
         (if ($item | has("outbounds")) and (. | has("outbounds")) then {"outbounds": (.outbounds + $item.outbounds)} else {} end) +
@@ -388,7 +437,7 @@ merge_configs() {
     )' "${PARTS_DIR}"/*.json > "${output_file}"; then
         
         local check_out
-        if check_out=$(ENABLE_DEPRECATED_WIREGUARD_OUTBOUND=true ${SINGBOX_BIN} check -c "${output_file}" 2>&1); then 
+        if check_out=$(ENABLE_DEPRECATED_SPECIAL_OUTBOUNDS=true ENABLE_DEPRECATED_LEGACY_DNS_SERVERS=true ${SINGBOX_BIN} check -c "${output_file}" 2>&1); then 
             success "配置生成並驗證通過"
         else 
             error "Sing-box 核心校驗失敗"
