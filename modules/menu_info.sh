@@ -226,122 +226,165 @@ display_links_and_qr() {
 }
 
 generate_json_outbound_object() {
-    local proto=$1
-    local ip=$(get_node_ip)
-    local sni_hy2="www.bing.com"; local insecure_hy2=true
-    if [[ "${PRISM_HY2_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then sni_hy2="${PRISM_ACME_DOMAIN}"; insecure_hy2=false; fi
-    local sni_tuic="www.bing.com"; local insecure_tuic=true
-    if [[ "${PRISM_TUIC_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then sni_tuic="${PRISM_ACME_DOMAIN}"; insecure_tuic=false; fi
-    local sni_any="www.bing.com"; local insecure_any=true
-    if [[ "${PRISM_ANYTLS_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then sni_any="${PRISM_ACME_DOMAIN}"; insecure_any=false; fi
+    local proto=$1; local ip=$(get_node_ip)
+    local sni_hy2="www.bing.com"; local insecure_hy2=true; if [[ "${PRISM_HY2_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then sni_hy2="${PRISM_ACME_DOMAIN}"; insecure_hy2=false; fi
+    local sni_tuic="www.bing.com"; local insecure_tuic=true; if [[ "${PRISM_TUIC_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then sni_tuic="${PRISM_ACME_DOMAIN}"; insecure_tuic=false; fi
+    local sni_any="www.bing.com"; local insecure_any=true; if [[ "${PRISM_ANYTLS_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then sni_any="${PRISM_ACME_DOMAIN}"; insecure_any=false; fi
 
     case "$proto" in
-        "vision")
-            echo "{ \"type\": \"vless\", \"tag\": \"Vision\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_REALITY_VISION}, \"uuid\": \"${PRISM_UUID}\", \"flow\": \"xtls-rprx-vision\", \"tls\": { \"enabled\": true, \"server_name\": \"${PRISM_DEST}\", \"utls\": { \"enabled\": true, \"fingerprint\": \"chrome\" }, \"reality\": { \"enabled\": true, \"public_key\": \"${PRISM_PUBLIC_KEY}\", \"short_id\": \"${PRISM_SHORT_ID}\" } }, \"packet_encoding\": \"xudp\" }" ;;
-        "grpc")
-            echo "{ \"type\": \"vless\", \"tag\": \"gRPC\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_REALITY_GRPC}, \"uuid\": \"${PRISM_UUID}\", \"transport\": { \"type\": \"grpc\", \"service_name\": \"grpc\" }, \"tls\": { \"enabled\": true, \"server_name\": \"${PRISM_DEST}\", \"utls\": { \"enabled\": true, \"fingerprint\": \"chrome\" }, \"reality\": { \"enabled\": true, \"public_key\": \"${PRISM_PUBLIC_KEY}\", \"short_id\": \"${PRISM_SHORT_ID}\" } } }" ;;
-        "hy2")
+        "vision") echo "{ \"type\": \"vless\", \"tag\": \"Vision\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_REALITY_VISION}, \"uuid\": \"${PRISM_UUID}\", \"flow\": \"xtls-rprx-vision\", \"tls\": { \"enabled\": true, \"server_name\": \"${PRISM_DEST}\", \"utls\": { \"enabled\": true, \"fingerprint\": \"chrome\" }, \"reality\": { \"enabled\": true, \"public_key\": \"${PRISM_PUBLIC_KEY}\", \"short_id\": \"${PRISM_SHORT_ID}\" } }, \"packet_encoding\": \"xudp\" }" ;;
+        "grpc") echo "{ \"type\": \"vless\", \"tag\": \"gRPC\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_REALITY_GRPC}, \"uuid\": \"${PRISM_UUID}\", \"transport\": { \"type\": \"grpc\", \"service_name\": \"grpc\" }, \"tls\": { \"enabled\": true, \"server_name\": \"${PRISM_DEST}\", \"utls\": { \"enabled\": true, \"fingerprint\": \"chrome\" }, \"reality\": { \"enabled\": true, \"public_key\": \"${PRISM_PUBLIC_KEY}\", \"short_id\": \"${PRISM_SHORT_ID}\" } } }" ;;
+        "hy2") 
             local hy2_port_val=${PRISM_PORT_HY2}
-            if [[ -n "${PRISM_HY2_PORT_HOPPING}" ]]; then
-                hy2_port_val="\"${PRISM_HY2_PORT_HOPPING//-/:}\""
-            fi
-            echo "{ \"type\": \"hysteria2\", \"tag\": \"Hy2\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_HY2}, \"password\": \"${PRISM_HY2_PASSWORD}\", \"tls\": { \"enabled\": true, \"server_name\": \"${sni_hy2}\", \"insecure\": ${insecure_hy2}, \"alpn\": [\"h3\"] } }" ;;
-        "tuic")
-            echo "{ \"type\": \"tuic\", \"tag\": \"TUIC\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_TUIC}, \"uuid\": \"${PRISM_TUIC_UUID}\", \"password\": \"${PRISM_TUIC_PASSWORD}\", \"congestion_control\": \"bbr\", \"udp_relay_mode\": \"native\", \"tls\": { \"enabled\": true, \"server_name\": \"${sni_tuic}\", \"insecure\": ${insecure_tuic}, \"alpn\": [\"h3\"] } }" ;;
-        "anytls")
-            echo "{ \"type\": \"anytls\", \"tag\": \"AnyTLS\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_ANYTLS}, \"users\": [{ \"name\": \"prism\", \"password\": \"${PRISM_ANYTLS_PASSWORD}\" }], \"tls\": { \"enabled\": true, \"server_name\": \"${sni_any}\", \"insecure\": ${insecure_any} } }" ;;
-        "anyreality")
-            echo "{ \"type\": \"anytls\", \"tag\": \"AnyReality\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_ANYTLS_REALITY}, \"users\": [{ \"name\": \"prism\", \"password\": \"${PRISM_ANYTLS_REALITY_PASSWORD}\" }], \"tls\": { \"enabled\": true, \"server_name\": \"${PRISM_DEST}\", \"reality\": { \"enabled\": true, \"public_key\": \"${PRISM_PUBLIC_KEY}\", \"short_id\": \"${PRISM_SHORT_ID}\" }, \"utls\": { \"enabled\": true, \"fingerprint\": \"chrome\" } } }" ;;
-        "shadowtls")
-            echo "{ \"type\": \"shadowtls\", \"tag\": \"ShadowTLS-Out\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_SHADOWTLS}, \"version\": 3, \"password\": \"${PRISM_SHADOWTLS_PASSWORD}\", \"tls\": { \"enabled\": true, \"server_name\": \"${PRISM_DEST}\", \"utls\": { \"enabled\": true, \"fingerprint\": \"chrome\" } } }" 
-            ;;
+            if [[ -n "${PRISM_HY2_PORT_HOPPING}" ]]; then hy2_port_val="\"${PRISM_HY2_PORT_HOPPING//-/:}\""; fi
+            echo "{ \"type\": \"hysteria2\", \"tag\": \"Hy2\", \"server\": \"${ip}\", \"server_port\": ${hy2_port_val}, \"password\": \"${PRISM_HY2_PASSWORD}\", \"tls\": { \"enabled\": true, \"server_name\": \"${sni_hy2}\", \"insecure\": ${insecure_hy2}, \"alpn\": [\"h3\"] } }" ;;
+        "tuic") echo "{ \"type\": \"tuic\", \"tag\": \"TUIC\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_TUIC}, \"uuid\": \"${PRISM_TUIC_UUID}\", \"password\": \"${PRISM_TUIC_PASSWORD}\", \"congestion_control\": \"bbr\", \"udp_relay_mode\": \"native\", \"tls\": { \"enabled\": true, \"server_name\": \"${sni_tuic}\", \"insecure\": ${insecure_tuic}, \"alpn\": [\"h3\"] } }" ;;
+        "anytls") echo "{ \"type\": \"anytls\", \"tag\": \"AnyTLS\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_ANYTLS}, \"name\": \"prism\", \"password\": \"${PRISM_ANYTLS_PASSWORD}\", \"tls\": { \"enabled\": true, \"server_name\": \"${sni_any}\", \"insecure\": ${insecure_any} } }" ;;
+        "anyreality") echo "{ \"type\": \"anytls\", \"tag\": \"AnyReality\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_ANYTLS_REALITY}, \"name\": \"prism\", \"password\": \"${PRISM_ANYTLS_REALITY_PASSWORD}\", \"tls\": { \"enabled\": true, \"server_name\": \"${PRISM_DEST}\", \"reality\": { \"enabled\": true, \"public_key\": \"${PRISM_PUBLIC_KEY}\", \"short_id\": \"${PRISM_SHORT_ID}\" }, \"utls\": { \"enabled\": true, \"fingerprint\": \"chrome\" } } }" ;;
+        "shadowtls") echo "{ \"type\": \"shadowtls\", \"tag\": \"ShadowTLS-Out\", \"server\": \"${ip}\", \"server_port\": ${PRISM_PORT_SHADOWTLS}, \"version\": 3, \"password\": \"${PRISM_SHADOWTLS_PASSWORD}\", \"tls\": { \"enabled\": true, \"server_name\": \"${PRISM_DEST}\", \"utls\": { \"enabled\": true, \"fingerprint\": \"chrome\" } } }" ;;
+        *) echo "{}" ;;
     esac
 }
 
 display_client_json() {
     clear; print_banner
-    echo -e " ${P}>>> 客戶端完整配置 (Aggregated Config)${N}"
-    echo -e " ${D}提示：此配置包含所有可用節點，複製保存為 config.json 即可使用。${N}"
+    echo -e " ${P}>>> 生成客戶端配置 (Client JSON)${N}"
     echo -e "${SEP}"
+    echo -e " 請選擇你的 Sing-box 核心版本："
+    echo -e "  ${P}1.${N} ${W}v1.11 及以下${N} ${D}(舊版兼容格式)${N}"
+    echo -e "  ${P}2.${N} ${G}v1.12 及以上${N} ${D}(新版標準格式)${N}"
+    echo -e "${SEP}"
+    echo -e "  ${P}0.${N} 返回"
+    echo -e "${SEP}"
+    echo -ne " 請輸入選項: "; read -r ver_choice
+    
+    if [[ "$ver_choice" == "0" ]]; then show_menu; return; fi
+    if [[ "$ver_choice" != "1" && "$ver_choice" != "2" ]]; then error "無效選擇"; sleep 1; display_client_json; return; fi
 
-    JSON_OUTBOUNDS=()
-    PROXY_TAGS=()
+    clear; print_banner
+    echo -e " ${P}>>> 正在生成配置...${N}"; echo -e "${SEP}"
 
-    if [[ "${PRISM_ENABLE_REALITY_VISION}" == "true" ]]; then
-        JSON_OUTBOUNDS+=("$(generate_json_outbound_object "vision")"); PROXY_TAGS+=("\"Vision\"")
-    fi
-    if [[ "${PRISM_ENABLE_REALITY_GRPC}" == "true" ]]; then
-        JSON_OUTBOUNDS+=("$(generate_json_outbound_object "grpc")"); PROXY_TAGS+=("\"gRPC\"")
-    fi
-    if [[ "${PRISM_ENABLE_HY2}" == "true" ]]; then
-        JSON_OUTBOUNDS+=("$(generate_json_outbound_object "hy2")"); PROXY_TAGS+=("\"Hy2\"")
-    fi
-    if [[ "${PRISM_ENABLE_TUIC}" == "true" ]]; then
-        JSON_OUTBOUNDS+=("$(generate_json_outbound_object "tuic")"); PROXY_TAGS+=("\"TUIC\"")
-    fi
-    if [[ "${PRISM_ENABLE_ANYTLS}" == "true" ]]; then
-        JSON_OUTBOUNDS+=("$(generate_json_outbound_object "anytls")"); PROXY_TAGS+=("\"AnyTLS\"")
-    fi
-    if [[ "${PRISM_ENABLE_ANYTLS_REALITY}" == "true" ]]; then
-        JSON_OUTBOUNDS+=("$(generate_json_outbound_object "anyreality")"); PROXY_TAGS+=("\"AnyReality\"")
-    fi
+    JSON_OUTBOUNDS=(); PROXY_TAGS=()
+    if [[ "${PRISM_ENABLE_REALITY_VISION}" == "true" ]]; then JSON_OUTBOUNDS+=("$(generate_json_outbound_object "vision")"); PROXY_TAGS+=("\"Vision\""); fi
+    if [[ "${PRISM_ENABLE_REALITY_GRPC}" == "true" ]]; then JSON_OUTBOUNDS+=("$(generate_json_outbound_object "grpc")"); PROXY_TAGS+=("\"gRPC\""); fi
+    if [[ "${PRISM_ENABLE_HY2}" == "true" ]]; then JSON_OUTBOUNDS+=("$(generate_json_outbound_object "hy2")"); PROXY_TAGS+=("\"Hy2\""); fi
+    if [[ "${PRISM_ENABLE_TUIC}" == "true" ]]; then JSON_OUTBOUNDS+=("$(generate_json_outbound_object "tuic")"); PROXY_TAGS+=("\"TUIC\""); fi
+    if [[ "${PRISM_ENABLE_ANYTLS}" == "true" ]]; then JSON_OUTBOUNDS+=("$(generate_json_outbound_object "anytls")"); PROXY_TAGS+=("\"AnyTLS\""); fi
+    if [[ "${PRISM_ENABLE_ANYTLS_REALITY}" == "true" ]]; then JSON_OUTBOUNDS+=("$(generate_json_outbound_object "anyreality")"); PROXY_TAGS+=("\"AnyReality\""); fi
     if [[ "${PRISM_ENABLE_SHADOWTLS}" == "true" ]]; then
         JSON_OUTBOUNDS+=("$(generate_json_outbound_object "shadowtls")")
         JSON_OUTBOUNDS+=("{ \"type\": \"shadowsocks\", \"tag\": \"ShadowTLS\", \"detour\": \"ShadowTLS-Out\", \"method\": \"2022-blake3-aes-128-gcm\", \"password\": \"${PRISM_SS_PASSWORD}\" }")
         PROXY_TAGS+=("\"ShadowTLS\"")
     fi
 
-    if [[ ${#PROXY_TAGS[@]} -eq 0 ]]; then warn "無可用節點"; read -p "..."; return; fi
+    if [[ ${#PROXY_TAGS[@]} -eq 0 ]]; then warn "無可用節點"; read -p "..."; show_menu; return; fi
 
     local tags_string=$(IFS=,; echo "${PROXY_TAGS[*]}")
     local all_nodes_json=$(IFS=,; echo "${JSON_OUTBOUNDS[*]}")
+    local temp_file="${WORK_DIR}/temp_client.json"
 
-    cat > "${WORK_DIR}/temp_client.json" <<EOF
+    if [[ "$ver_choice" == "1" ]]; then
+        cat > "${temp_file}" <<EOF
 {
-  "log": { "level": "info", "timestamp": true },
+  "log": { "level": "info", "disabled": false, "timestamp": true },
+  "experimental": { "cache_file": { "enabled": true, "path": "cache.db", "store_fakeip": true }, "clash_api": { "external_controller": "127.0.0.1:9090", "external_ui": "ui", "default_mode": "rule" } },
   "dns": {
     "servers": [
-      { "tag": "google", "address": "8.8.8.8", "detour": "🚀 節點選擇" },
-      { "tag": "local", "address": "223.5.5.5", "detour": "direct" }
+      { "tag": "dns-remote", "address": "tls://8.8.8.8", "detour": "🚀 節點選擇" },
+      { "tag": "dns-local", "address": "223.5.5.5", "detour": "direct" }
     ],
-    "rules": [ { "outbound": "any", "server": "local" } ]
+    "rules": [
+      { "outbound": "any", "server": "dns-local" },
+      { "rule_set": "geosite-cn", "server": "dns-local" },
+      { "rule_set": "geosite-geolocation-!cn", "server": "dns-remote" }
+    ],
+    "strategy": "ipv4_only",
+    "independent_cache": true,
+    "final": "dns-remote"
   },
   "inbounds": [
+    { "type": "tun", "tag": "tun-in", "interface_name": "tun0", "inet4_address": "172.19.0.1/30", "auto_route": true, "strict_route": true, "stack": "gvisor", "sniff": true },
     { "type": "mixed", "tag": "mixed-in", "listen": "127.0.0.1", "listen_port": 2080, "sniff": true }
   ],
-  "outbounds": [
-    {
-      "type": "selector",
-      "tag": "🚀 節點選擇",
-      "outbounds": [ "⚡ 自動選擇", ${tags_string}, "direct" ]
-    },
-    {
-      "type": "urltest",
-      "tag": "⚡ 自動選擇",
-      "outbounds": [ ${tags_string} ],
-      "url": "http://www.gstatic.com/generate_204",
-      "interval": "3m"
-    },
-    ${all_nodes_json},
-    { "type": "direct", "tag": "direct" },
-    { "type": "block", "tag": "block" }
-  ],
   "route": {
+    "final": "🚀 節點選擇",
     "auto_detect_interface": true,
-    "final": "🚀 節點選擇"
-  }
+    "rule_set": [
+      { "tag": "geosite-geolocation-!cn", "type": "remote", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-!cn.srs", "download_detour": "🚀 節點選擇" },
+      { "tag": "geosite-cn", "type": "remote", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs", "download_detour": "🚀 節點選擇" },
+      { "tag": "geosite-category-ads-all", "type": "remote", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs", "download_detour": "🚀 節點選擇" },
+      { "tag": "geoip-cn", "type": "remote", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs", "download_detour": "🚀 節點選擇" }
+    ],
+    "rules": [
+      { "protocol": "dns", "outbound": "dns-out" },
+      { "rule_set": "geosite-category-ads-all", "outbound": "block" },
+      { "rule_set": ["geoip-cn", "geosite-cn"], "outbound": "direct" },
+      { "rule_set": "geosite-geolocation-!cn", "outbound": "🚀 節點選擇" }
+    ]
+  },
+  "outbounds": [
+    { "type": "selector", "tag": "🚀 節點選擇", "outbounds": [ "⚡ 自動選擇", ${tags_string}, "direct" ] },
+    { "type": "urltest", "tag": "⚡ 自動選擇", "outbounds": [ ${tags_string} ], "url": "http://www.gstatic.com/generate_204", "interval": "3m" },
+    ${all_nodes_json},
+    { "type": "direct", "tag": "direct" }, { "type": "block", "tag": "block" }, { "type": "dns", "tag": "dns-out" }
+  ]
 }
 EOF
-
-    if command -v jq &> /dev/null; then
-        jq . "${WORK_DIR}/temp_client.json"
     else
-        cat "${WORK_DIR}/temp_client.json"
+        cat > "${temp_file}" <<EOF
+{
+  "log": { "level": "info", "timestamp": true },
+  "experimental": { "cache_file": { "enabled": true, "path": "cache.db", "store_fakeip": true }, "clash_api": { "external_controller": "127.0.0.1:9090", "external_ui": "ui", "default_mode": "rule" } },
+  "dns": {
+    "servers": [
+      { "tag": "dns-local", "type": "https", "server": "223.5.5.5" },
+      { "tag": "dns-remote", "type": "https", "server": "8.8.8.8", "detour": "🚀 節點選擇" }
+    ],
+    "rules": [
+      { "rule_set": ["geosite-category-ads-all"], "action": "reject" },
+      { "rule_set": "geosite-cn", "server": "dns-local" },
+      { "rule_set": "geosite-geolocation-!cn", "server": "dns-remote" }
+    ],
+    "strategy": "ipv4_only",
+    "independent_cache": true,
+    "final": "dns-remote"
+  },
+  "inbounds": [
+    { "type": "tun", "tag": "tun-in", "interface_name": "tun0", "address": "172.19.0.1/30", "auto_route": true, "strict_route": true, "stack": "system", "route_exclude_address": [ "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12", "fc00::/7" ] },
+    { "type": "mixed", "tag": "mixed-in", "listen": "127.0.0.1", "listen_port": 2080 }
+  ],
+  "route": {
+    "final": "🚀 節點選擇",
+    "auto_detect_interface": true,
+    "default_domain_resolver": "dns-remote",
+    "rule_set": [
+      { "tag": "geosite-geolocation-!cn", "type": "remote", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-!cn.srs", "download_detour": "🚀 節點選擇" },
+      { "tag": "geosite-cn", "type": "remote", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs", "download_detour": "🚀 節點選擇" },
+      { "tag": "geosite-category-ads-all", "type": "remote", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs", "download_detour": "🚀 節點選擇" },
+      { "tag": "geoip-cn", "type": "remote", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs", "download_detour": "🚀 節點選擇" }
+    ],
+    "rules": [
+      { "action": "sniff" },
+      { "protocol": "dns", "action": "hijack-dns" },
+      { "ip_is_private": true, "outbound": "direct" },
+      { "rule_set": ["geosite-category-ads-all"], "action": "reject" },
+      { "rule_set": ["geoip-cn", "geosite-cn"], "outbound": "direct" },
+      { "rule_set": "geosite-geolocation-!cn", "outbound": "🚀 節點選擇" }
+    ]
+  },
+  "outbounds": [
+    { "type": "selector", "tag": "🚀 節點選擇", "outbounds": [ "⚡ 自動選擇", ${tags_string}, "direct" ] },
+    { "type": "urltest", "tag": "⚡ 自動選擇", "outbounds": [ ${tags_string} ], "url": "http://www.gstatic.com/generate_204", "interval": "3m" },
+    ${all_nodes_json},
+    { "type": "direct", "tag": "direct" }, { "type": "block", "tag": "block" }
+  ]
+}
+EOF
     fi
-    rm -f "${WORK_DIR}/temp_client.json"
 
-    echo -e "${SEP}"
-    read -p " 按回車返回主菜單..."
+    if command -v jq &> /dev/null; then jq . "${temp_file}"; else cat "${temp_file}"; fi
+    rm -f "${temp_file}"
+    echo -e "${SEP}"; read -p " 按回車返回主菜單..."
     show_menu
 }
 
