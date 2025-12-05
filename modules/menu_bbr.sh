@@ -57,6 +57,9 @@ get_bbr_info() {
 install_xanmod_kernel() {
     clear; print_banner
     echo -e " ${R}>>> 危險操作：安裝 XanMod 內核 (BBRv3)${N}"
+    echo -e "${D}功能說明：更換為高性能的第三方 XanMod 內核。${N}"
+    echo -e "${D}優點：原生支持 BBRv3，針對網絡吞吐和延遲有深度優化。${N}"
+    echo -e "${D}風險：更換內核屬高危操作，極少數情況下可能導致 VPS 無法啟動。${N}"
     echo -e "${SEP}"
     
     local arch=$(uname -m)
@@ -112,6 +115,7 @@ install_xanmod_kernel() {
 }
 
 enable_bbr_only() {
+    echo ""; echo -e "${D}功能說明：在當前內核上啟用原版 BBR 擁塞控制算法。${N}"
     info "正在開啟原版 BBR..."
     if grep -q "bbr" /etc/sysctl.conf; then
         sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
@@ -125,6 +129,7 @@ enable_bbr_only() {
 }
 
 sys_optimize() {
+    echo ""; echo -e "${D}功能說明：優化 Linux 網絡棧參數、文件句柄限制，提升高併發性能。${N}"
     info "正在應用系統優化參數..."
     cat > /etc/sysctl.d/99-prism-opt.conf <<EOF
 fs.file-max = 1000000
@@ -235,5 +240,4 @@ action_bbr() {
             *) error "無效輸入"; sleep 1 ;;
         esac
     done
-    show_menu
 }
