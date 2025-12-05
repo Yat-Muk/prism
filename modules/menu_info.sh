@@ -277,6 +277,23 @@ display_client_json() {
         PROXY_TAGS+=("\"ShadowTLS\"")
     fi
 
+    if [[ "$ver_choice" == "1" ]]; then
+        local legacy_outbounds=()
+        local legacy_tags=()
+        for i in "${!JSON_OUTBOUNDS[@]}"; do
+            if [[ "${JSON_OUTBOUNDS[$i]}" != *"\"type\": \"anytls\""* ]]; then
+                legacy_outbounds+=("${JSON_OUTBOUNDS[$i]}")
+                legacy_tags+=("${PROXY_TAGS[$i]}")
+            fi
+        done
+        JSON_OUTBOUNDS=("${legacy_outbounds[@]}")
+        PROXY_TAGS=("${legacy_tags[@]}")
+        if [[ ${#JSON_OUTBOUNDS[@]} -eq 0 ]]; then
+            warn "當前沒有兼容 v1.11- 的節點 (AnyTLS 僅支持 v1.12+)。"
+            read -p "..."; show_menu; return
+        fi
+    fi
+
     if [[ ${#PROXY_TAGS[@]} -eq 0 ]]; then warn "無可用節點"; read -p "..."; show_menu; return; fi
 
     local tags_string=$(IFS=,; echo "${PROXY_TAGS[*]}")
@@ -350,8 +367,18 @@ EOF
     "final": "dns-remote"
   },
   "inbounds": [
-    { "type": "tun", "tag": "tun-in", "interface_name": "tun0", "address": "172.19.0.1/30", "auto_route": true, "strict_route": true, "stack": "system", "route_exclude_address": [ "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12", "fc00::/7" ] },
-    { "type": "mixed", "tag": "mixed-in", "listen": "127.0.0.1", "listen_port": 2080 }
+    {
+      "type": "tun",
+      "tag": "tun-in",
+      "interface_name": "tun0",
+      "address": "172.19.0.1/30",
+      "mtu": 9000,
+      "auto_route": true,
+      "strict_route": true,
+      "stack": "system",
+      "route_exclude_address": [ "192.168.0.0/16", "10.0.0.0/8", "172.16.0.0/12", "fc00::/7" ]
+    },
+    { "type": "mixed", "tag": "mixed-in", "listen": "127.0.0.1", "listen_port": 2080, "sniff": true }
   ],
   "route": {
     "final": "🚀 節點選擇",
@@ -376,7 +403,7 @@ EOF
     { "type": "selector", "tag": "🚀 節點選擇", "outbounds": [ "⚡ 自動選擇", ${tags_string}, "direct" ] },
     { "type": "urltest", "tag": "⚡ 自動選擇", "outbounds": [ ${tags_string} ], "url": "http://www.gstatic.com/generate_204", "interval": "3m" },
     ${all_nodes_json},
-    { "type": "direct", "tag": "direct" }
+    { "type": "direct", "tag": "direct" }, { "type": "block", "tag": "block" }
   ]
 }
 EOF
