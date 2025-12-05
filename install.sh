@@ -33,9 +33,11 @@ MODULE_FILES=(
     "modules/menu_routing.sh"
     "modules/menu_core.sh"
     "modules/menu_bbr.sh"
+    "modules/menu_tool.sh"
     "modules/config.sh"
     "modules/kernel.sh"
     "modules/cert.sh"
+    
 )
 
 echo_info() { echo -e "${Y}[INFO]${N} $1"; }
