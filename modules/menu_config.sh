@@ -36,7 +36,7 @@ write_secret_no_apply() {
 
 apply_changes() {
     echo ""
-    info "正在應用配置變更..."
+    info "正在刷新服務端配置..."
     
     if [[ -f "${BASE_DIR}/modules/config.sh" ]]; then
         source "${BASE_DIR}/modules/config.sh"
@@ -49,7 +49,7 @@ apply_changes() {
             update_all_port_hopping || warn "防火牆規則更新失敗"
         fi
         
-        success "更新成功！"
+        success "配置已刷新並生效！"
         source "${CONFIG_DIR}/secrets.env"
     fi
 }
@@ -351,11 +351,12 @@ submenu_config() {
     clear; print_banner
     echo -e " ${P}>>> 配置與協議管理${N}"
     echo -e "${SEP}"
-    echo -e "  ${P}1.${N} ${W}協議管理${N}          ${D}(開啟/關閉 特定協議)${N}"
+    echo -e "  ${P}1.${N} ${C}協議管理${N}          ${D}(開啟/關閉 特定協議)${N}"
     echo -e "  ${P}2.${N} ${W}更換 Reality 偽裝${N} ${D}(SNI)${N}"
     echo -e "  ${P}3.${N} ${W}更換 全協議 UUID${N}"
     echo -e "  ${P}4.${N} ${W}更換 端口${N}"
-    echo -e "  ${P}5.${N} ${R}重置 所有配置${N}     ${D}(重置所有端口/密鑰)${N}"
+    echo -e "  ${P}5.${N} ${G}刷新 服務端配置${N}   ${D}(重新編譯並重啟服務)${N}"
+    echo -e "  ${P}6.${N} ${R}重置 所有配置${N}     ${D}(重置所有端口/密鑰)${N}"
     echo -e "${SEP}"
     echo -e "  ${P}0.${N} 返回上級菜單"
     echo -e "${SEP}"
@@ -365,7 +366,8 @@ submenu_config() {
         2) change_reality_sni ;;
         3) change_uuid ;;
         4) change_port_menu ;;
-        5) action_reset_all ;;
+        5) apply_changes; read -p " 按回車返回主菜單..."; show_menu ;;
+        6) action_reset_all ;;
         0) show_menu ;;
         *) submenu_config ;;
     esac
