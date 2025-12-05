@@ -292,7 +292,14 @@ EOF
     "listen": "::", 
     "listen_port": ${PRISM_PORT_ANYTLS:-10443}, 
     "users": [{ "name": "prism", "password": "${PRISM_ANYTLS_PASSWORD}" }], 
-    "padding_scheme": [ "stop=8", "0=30-30", "1=100-400", "2=400-500,c,500-1000,c,500-1000,c,500-1000,c,500-1000", "3=9-9,500-1000", "4=500-1000", "5=500-1000", "6=500-1000", "7=500-1000" ],
+    "padding_scheme": [
+        "stop=6",
+        "0=10-60",
+        "1=30-150",
+        "2=200-500,c,400-800",
+        "3=100-300",
+        "4=500-1200"
+    ],
     "tls": { 
       "enabled": true, 
       "server_name": "${PRISM_ACME_DOMAIN:-www.bing.com}", 
@@ -313,7 +320,14 @@ EOF
     "listen": "::", 
     "listen_port": ${PRISM_PORT_ANYTLS_REALITY:-20443}, 
     "users": [{ "name": "prism", "password": "${PRISM_ANYTLS_REALITY_PASSWORD}" }], 
-    "padding_scheme": [ "stop=8", "0=30-30", "1=100-400", "2=400-500,c,500-1000,c,500-1000,c,500-1000,c,500-1000", "3=9-9,500-1000", "4=500-1000", "5=500-1000", "6=500-1000", "7=500-1000" ],
+    "padding_scheme": [
+        "stop=6",
+        "0=10-60",
+        "1=30-150",
+        "2=200-500,c,400-800",
+        "3=100-300",
+        "4=500-1200"
+    ],
     "tls": { 
       "enabled": true, 
       "server_name": "${PRISM_DEST}", 
