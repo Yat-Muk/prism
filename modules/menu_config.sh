@@ -14,6 +14,16 @@
 
 if [[ -f "${BASE_DIR}/core/network.sh" ]]; then source "${BASE_DIR}/core/network.sh"; fi
 
+check_anytls_capability() {
+    if [[ ! -f "${SINGBOX_BIN}" ]]; then return 0; fi
+    local ver=$(${SINGBOX_BIN} version 2>/dev/null | grep "sing-box version" | awk '{print $3}')
+    ver=${ver#v}
+    IFS='.' read -r major minor patch <<< "$ver"
+    if [[ "$major" -gt 1 ]]; then return 0; fi
+    if [[ "$major" -eq 1 && "$minor" -ge 12 ]]; then return 0; fi
+    return 1
+}
+
 write_secret_no_apply() {
     local key="$1"
     local raw_value="$2"
@@ -135,8 +145,11 @@ select_protocols_wizard() {
                 2) w_grpc=$([[ "$w_grpc" == "true" ]] && echo "false" || echo "true") ;;
                 3) w_hy2=$([[ "$w_hy2" == "true" ]] && echo "false" || echo "true") ;;
                 4) w_tuic=$([[ "$w_tuic" == "true" ]] && echo "false" || echo "true") ;;
-                5) w_anytls=$([[ "$w_anytls" == "true" ]] && echo "false" || echo "true") ;;
-                6) w_any_reality=$([[ "$w_any_reality" == "true" ]] && echo "false" || echo "true") ;;
+                5|6) 
+                    if ! check_anytls_capability; then warn "當前核心不支持 AnyTLS (需 v1.12+)，已忽略。"; continue; fi
+                    if [[ "$choice" == "5" ]]; then w_anytls=$([[ "$w_anytls" == "true" ]] && echo "false" || echo "true"); fi
+                    if [[ "$choice" == "6" ]]; then w_any_reality=$([[ "$w_any_reality" == "true" ]] && echo "false" || echo "true"); fi
+                    ;;
                 7) w_shadow=$([[ "$w_shadow" == "true" ]] && echo "false" || echo "true") ;;
             esac
         done
@@ -196,8 +209,11 @@ submenu_protocol_switch() {
                     2) PRISM_ENABLE_REALITY_GRPC=$([[ "${PRISM_ENABLE_REALITY_GRPC:-false}" == "true" ]] && echo "false" || echo "true") ;;
                     3) PRISM_ENABLE_HY2=$([[ "${PRISM_ENABLE_HY2:-false}" == "true" ]] && echo "false" || echo "true") ;;
                     4) PRISM_ENABLE_TUIC=$([[ "${PRISM_ENABLE_TUIC:-false}" == "true" ]] && echo "false" || echo "true") ;;
-                    5) PRISM_ENABLE_ANYTLS=$([[ "${PRISM_ENABLE_ANYTLS:-false}" == "true" ]] && echo "false" || echo "true") ;;
-                    6) PRISM_ENABLE_ANYTLS_REALITY=$([[ "${PRISM_ENABLE_ANYTLS_REALITY:-false}" == "true" ]] && echo "false" || echo "true") ;;
+                    5|6)
+                        if ! check_anytls_capability; then echo ""; warn "當前核心版本不支持 AnyTLS (需 v1.12+)。"; sleep 1.5; continue; fi
+                        if [[ "$choice" == "5" ]]; then PRISM_ENABLE_ANYTLS=$([[ "${PRISM_ENABLE_ANYTLS:-false}" == "true" ]] && echo "false" || echo "true"); fi
+                        if [[ "$choice" == "6" ]]; then PRISM_ENABLE_ANYTLS_REALITY=$([[ "${PRISM_ENABLE_ANYTLS_REALITY:-false}" == "true" ]] && echo "false" || echo "true"); fi
+                        ;;
                     7) PRISM_ENABLE_SHADOWTLS=$([[ "${PRISM_ENABLE_SHADOWTLS:-false}" == "true" ]] && echo "false" || echo "true") ;;
                 esac
             done
