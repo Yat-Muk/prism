@@ -340,14 +340,44 @@ change_port_menu() {
                             local s=${hop_range%%:*}
                             local e=${hop_range##*:}
                             if (( s < e && s >= 1 && e <= 65535 )); then write_secret_no_apply "$hopping_var" "$hop_range"; break;
-                            else echo -e "${R} 範圍無效${N}"; fi
-                    else echo -e "${R} 格式錯誤${N}"; fi
+                            else echo -e "${R} 範圍無效 (Start < End)${N}"; fi
+                    else echo -e "${R} 格式錯誤 (請使用冒號 : 分隔)${N}"; fi
                 done
             fi
         fi 
         apply_changes "restart"
     done
     submenu_config
+}
+
+change_anytls_padding() {
+    clear; print_banner
+    echo -e " ${P}>>> AnyTLS 填充策略 (Padding Scheme)${N}"
+    echo -e "${D}功能說明：配置填充規則，模擬真實網頁瀏覽特徵。${N}"
+    echo -e "${SEP}"
+    echo -e "  ${P}1.${N} ${G}均衡流${N}${D}[推薦]  (模擬網頁瀏覽，性價比高)${N}"
+    echo -e "  ${P}2.${N} ${W}極簡流${N}        ${D}(省流/移動端，低延遲)${N}"
+    echo -e "  ${P}3.${N} ${Y}高對抗流${N}      ${D}(針對性突破，模擬大數據塊)${N}"
+    echo -e "  ${P}4.${N} ${W}官方默認${N}      ${D}(Sing-box 官方示例配置)${N}"
+    echo -e "${SEP}"
+    echo -e "  ${P}0.${N} 返回"
+    echo -e "${SEP}"
+    echo -ne " 請輸入選項: "; read -r choice
+    
+    local mode=""
+    case "$choice" in
+        1) mode="balanced" ;;
+        2) mode="minimal" ;;
+        3) mode="high_resistance" ;;
+        4) mode="official" ;;
+        0) submenu_config; return ;;
+        *) error "無效輸入"; sleep 1; change_anytls_padding; return ;;
+    esac
+    
+    write_secret_no_apply "PRISM_ANYTLS_PADDING_MODE" "$mode"
+    apply_changes "restart"
+    read -p " 按回車返回菜單..."
+    show_menu
 }
 
 action_reset_all() {
@@ -370,20 +400,21 @@ submenu_config() {
     echo -e "  ${P}2.${N} ${W}更換 SNI域名${N}      ${D}(Reality 偽裝域名)${N}"
     echo -e "  ${P}3.${N} ${W}更換 全協議 UUID${N}"
     echo -e "  ${P}4.${N} ${W}更換 端口${N}"
-    echo -e "  ${P}5.${N} ${G}刷新 服務端配置${N}   ${D}(重新編譯並重啟服務)${N}"
-    echo -e "  ${P}6.${N} ${R}重置 所有配置${N}     ${D}(重置所有端口/密鑰)${N}"
+    echo -e "  ${P}5.${N} ${W}AnyTLS 填充策略${N}   ${D}(調整偽裝流量特徵)${N}"
+    echo -e "  ${P}6.${N} ${G}刷新 服務端配置${N}   ${D}(重新編譯並重啟服務)${N}"
+    echo -e "  ${P}7.${N} ${R}重置 所有配置${N}     ${D}(重置所有端口/密鑰)${N}"
     echo -e "${SEP}"
     echo -e "  ${P}0.${N} 返回上級菜單"
     echo -e "${SEP}"
     echo -ne " 請輸入選項: "; read -r sub_choice
     case "${sub_choice}" in
-        1) submenu_protocol_switch ;;
-        2) change_reality_sni ;;
-        3) change_uuid ;;
-        4) change_port_menu ;;
-        5) apply_changes; read -p " 按回車返回主菜單..."; show_menu ;;
-        6) action_reset_all ;;
-        0) show_menu ;;
-        *) submenu_config ;;
+        1) submenu_protocol_switch ;; 
+        2) change_reality_sni ;; 
+        3) change_uuid ;; 
+        4) change_port_menu ;; 
+        5) change_anytls_padding ;; 
+        6) apply_changes "restart"; read -p " 按回車返回主菜單..."; show_menu ;; 
+        7) action_reset_all ;;
+        0) show_menu ;; *) submenu_config ;;
     esac
 }
