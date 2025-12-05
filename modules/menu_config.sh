@@ -13,6 +13,7 @@
 # GNU General Public License for more details.
 
 if [[ -f "${BASE_DIR}/core/network.sh" ]]; then source "${BASE_DIR}/core/network.sh"; fi
+if [[ -f "${BASE_DIR}/modules/kernel.sh" ]]; then source "${BASE_DIR}/modules/kernel.sh"; fi
 
 check_anytls_capability() {
     if [[ ! -f "${SINGBOX_BIN}" ]]; then return 0; fi
@@ -51,11 +52,19 @@ apply_changes() {
     if [[ -f "${BASE_DIR}/modules/config.sh" ]]; then
         source "${BASE_DIR}/modules/config.sh"
         
+        if declare -f create_systemd_service > /dev/null; then
+            info "正在同步服務描述文件..."
+            create_systemd_service
+        else
+            warn "無法更新服務文件 (create_systemd_service 未加載)"
+        fi
+
         if ! build_config; then error "配置生成失敗，操作終止"; return 1; fi
         
         if [[ "$mode" == "reload" ]]; then
             if systemctl is-active --quiet prism; then
-                info "正在執行熱重載..."
+                info "正在執行熱重載 (Hot Reload)..."
+                echo -e " ${D}說明：更新用戶/SNI信息，不會斷開現有連接。${N}"
                 
                 if systemctl reload prism; then
                     success "配置已熱加載生效！"
@@ -70,7 +79,8 @@ apply_changes() {
                 success "服務已啟動！"
             fi
         else
-            info "正在執行服務重啟..."
+            info "正在執行服務重啟 (Restart)..."
+            echo -e " ${D}說明：更換端口或協議結構，需重啟服務 (會瞬斷連接)。${N}"
             systemctl restart prism || warn "服務重啟異常，請檢查日誌"
             
             if declare -f update_all_port_hopping > /dev/null; then 
