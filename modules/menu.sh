@@ -22,9 +22,10 @@ source "${BASE_DIR}/modules/menu_config.sh"
 source "${BASE_DIR}/modules/menu_info.sh"
 source "${BASE_DIR}/modules/menu_cert.sh"
 
-if [[ -f "${BASE_DIR}/modules/menu_routing.sh" ]]; then source "${BASE_DIR}/modules/menu_routing.sh"; else submenu_routing() { echo "Dev..."; sleep 1; show_menu; }; fi
-if [[ -f "${BASE_DIR}/modules/menu_core.sh" ]]; then source "${BASE_DIR}/modules/menu_core.sh"; else submenu_core() { echo "Dev..."; sleep 1; show_menu; }; fi
-if [[ -f "${BASE_DIR}/modules/menu_bbr.sh" ]]; then source "${BASE_DIR}/modules/menu_bbr.sh"; else action_bbr() { echo "Dev..."; sleep 1; show_menu; }; fi
+if [[ -f "${BASE_DIR}/modules/menu_routing.sh" ]]; then source "${BASE_DIR}/modules/menu_routing.sh"; else submenu_routing() { warn "模塊缺失"; sleep 1; show_menu; }; fi
+if [[ -f "${BASE_DIR}/modules/menu_core.sh" ]]; then source "${BASE_DIR}/modules/menu_core.sh"; else submenu_core() { warn "模塊缺失"; sleep 1; show_menu; }; fi
+if [[ -f "${BASE_DIR}/modules/menu_bbr.sh" ]]; then source "${BASE_DIR}/modules/menu_bbr.sh"; else action_bbr() { warn "模塊缺失"; sleep 1; show_menu; }; fi
+if [[ -f "${BASE_DIR}/modules/menu_tool.sh" ]]; then source "${BASE_DIR}/modules/menu_tool.sh"; else submenu_tool() { warn "模塊缺失"; sleep 1; show_menu; }; fi
 
 if [[ -f "${CONFIG_DIR}/secrets.env" ]]; then source "${CONFIG_DIR}/secrets.env"; fi
 
@@ -121,8 +122,9 @@ show_menu() {
     echo -e "${D}  ------------------------------------${N}"
     echo -e "  ${P}10.${N}${G}查看 實時日誌${N}"
     echo -e "  ${P}11.${N}${G}查看 節點信息${N}  ${D}(鏈接/二維碼/客戶端配置文件)${N}"
+    echo -e "  ${P}12.${N}${W}實用工具${N}       ${D}(IP檢測/備份/清理)${N}"
     echo -e "${D}  ------------------------------------${N}"
-    echo -e "  ${P}12.${N}${R}卸載 Prism${N}     ${D}(刪除程序和配置)${N}"
+    echo -e "  ${P}13.${N}${R}卸載 Prism${N}     ${D}(刪除程序和配置)${N}"
     echo -e "  ${P}0.${N} 退出"
     echo -e "${SEP}"
     
@@ -140,8 +142,13 @@ show_menu() {
         9) action_bbr ;;
         10) action_view_logs ;;
         11) show_node_info ;;
-        12) action_uninstall ;;
+        12) submenu_tool ;;
+        13) action_uninstall ;;
         0) echo -e "Bye."; exit 0 ;;
         *) error "無效輸入"; sleep 1; show_menu ;;
     esac
 }
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    show_menu
+fi
