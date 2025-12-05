@@ -49,6 +49,19 @@ get_cert_paths() {
     ensure_certificates; echo "${CERT_DIR}/self_signed.crt|${CERT_DIR}/self_signed.key"
 }
 
+get_padding_scheme_json() {
+    case "${PRISM_ANYTLS_PADDING_MODE:-balanced}" in
+        "minimal")
+            echo '[ "stop=4", "0=15-35", "1=10-50", "2=100-200" ]' ;;
+        "high_resistance")
+            echo '[ "stop=10", "0=50-100", "1=500-800", "2=c,800-1200", "3=50-50", "4=c,1000-1500", "5=100-500" ]' ;;
+        "official")
+            echo '[ "stop=8", "0=30-30", "1=100-400", "2=400-500,c,500-1000,c,500-1000,c,500-1000,c,500-1000", "3=9-9,500-1000", "4=500-1000", "5=500-1000", "6=500-1000", "7=500-1000" ]' ;;
+        *) 
+            echo '[ "stop=6", "0=10-60", "1=30-150", "2=200-500,c,400-800", "3=100-300", "4=500-1200" ]' ;;
+    esac
+}
+
 set_env_default() {
     local key="$1"; local val="$2"
     if [[ -z "${!key}" ]]; then
@@ -100,6 +113,8 @@ manage_secrets() {
         set_env_default "PRISM_SS_PASSWORD" "$ss_key"
     fi
     set_env_default "PRISM_SHADOWTLS_PASSWORD" "$(openssl rand -hex 16)"
+
+    set_env_default "PRISM_ANYTLS_PADDING_MODE" "balanced"
 
     if ! grep -q "PRISM_ENABLE_" "${SECRETS_FILE}"; then
         set_env_default "PRISM_ENABLE_REALITY_VISION" "true"
@@ -284,6 +299,9 @@ EOF
     if [[ "${PRISM_ENABLE_ANYTLS:-}" == "true" ]]; then
         local cert_info=$(get_cert_paths "${PRISM_ANYTLS_CERT_MODE:-self_signed}")
         local crt_path=$(echo "$cert_info" | cut -d'|' -f1); local key_path=$(echo "$cert_info" | cut -d'|' -f2)
+        
+        local padding_json=$(get_padding_scheme_json)
+        
         cat > "${PARTS_DIR}/04_inbounds_anytls.json" <<EOF
 { 
   "inbounds": [{ 
@@ -292,14 +310,7 @@ EOF
     "listen": "::", 
     "listen_port": ${PRISM_PORT_ANYTLS:-10443}, 
     "users": [{ "name": "prism", "password": "${PRISM_ANYTLS_PASSWORD}" }], 
-    "padding_scheme": [
-        "stop=6",
-        "0=10-60",
-        "1=30-150",
-        "2=200-500,c,400-800",
-        "3=100-300",
-        "4=500-1200"
-    ],
+    "padding_scheme": ${padding_json},
     "tls": { 
       "enabled": true, 
       "server_name": "${PRISM_ACME_DOMAIN:-www.bing.com}", 
@@ -312,6 +323,8 @@ EOF
     fi
 
     if [[ "${PRISM_ENABLE_ANYTLS_REALITY:-}" == "true" ]]; then
+        local padding_json=$(get_padding_scheme_json)
+        
         cat > "${PARTS_DIR}/04_inbounds_anytls_reality.json" <<EOF
 { 
   "inbounds": [{ 
@@ -320,14 +333,7 @@ EOF
     "listen": "::", 
     "listen_port": ${PRISM_PORT_ANYTLS_REALITY:-20443}, 
     "users": [{ "name": "prism", "password": "${PRISM_ANYTLS_REALITY_PASSWORD}" }], 
-    "padding_scheme": [
-        "stop=6",
-        "0=10-60",
-        "1=30-150",
-        "2=200-500,c,400-800",
-        "3=100-300",
-        "4=500-1200"
-    ],
+    "padding_scheme": ${padding_json},
     "tls": { 
       "enabled": true, 
       "server_name": "${PRISM_DEST}", 
