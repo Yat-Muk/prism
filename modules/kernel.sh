@@ -38,15 +38,6 @@ get_remote_version() {
     if [[ -z "$version" || "$version" == "null" ]]; then echo "N/A"; else echo "${version}"; fi
 }
 
-install_geodata() {
-    if [[ -s "${GEO_DIR}/geoip.db" ]] && [[ -s "${GEO_DIR}/geosite.db" ]]; then success "Geo 數據庫已存在"; return; fi
-    info "正在部署 Geo 數據庫..."
-    local geoip_url="https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db"
-    local geosite_url="https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db"
-    run_step "下載 GeoIP" "wget -q -O ${GEO_DIR}/geoip.db ${geoip_url}" || true
-    run_step "下載 GeoSite" "wget -q -O ${GEO_DIR}/geosite.db ${geosite_url}" || true
-}
-
 install_singbox_core() {
     local target_version="$1"
     local install_path="${SINGBOX_BIN}"
