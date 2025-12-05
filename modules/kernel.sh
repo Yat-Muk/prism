@@ -96,7 +96,6 @@ After=network.target nss-lookup.target
 [Service]
 User=root
 WorkingDirectory=${WORK_DIR}
-Environment="ENABLE_DEPRECATED_WIREGUARD_OUTBOUND=true"
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
 ExecStart=${SINGBOX_BIN} run -c ${CONFIG_DIR}/config.json
@@ -113,7 +112,6 @@ EOF
 
 install_kernel() {
     mkdir -p "${WORK_DIR}/bin" "${CONFIG_DIR}"
-    install_geodata
     local latest=$(get_remote_version "release")
     install_singbox_core "$latest"
 }
