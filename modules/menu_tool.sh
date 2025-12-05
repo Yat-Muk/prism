@@ -20,7 +20,6 @@ print_result() {
     local color="$2"
     local result="$3"
     local extra="$4"
-    
     local width=14
     local padding=$(awk -v str="$name" -v w="$width" 'BEGIN {
         len = length(str); non_ascii = 0;
@@ -28,7 +27,6 @@ print_result() {
         display_width = len + non_ascii; pad_len = w - display_width;
         if(pad_len < 0) pad_len = 0; printf "%*s", pad_len, "";
     }')
-    
     printf " %b%s%b${padding} : %b%s%b %b%s%b\n" "${C}" "${name}" "${N}" "${color}" "${result}" "${N}" "${D}" "${extra}" "${N}"
 }
 
@@ -37,12 +35,21 @@ check_chatgpt() {
     print_result "ChatGPT" "${D}" "檢測中..." ""
     
     local start_time=$(date +%s%N)
-    
+    local ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
     local code_web
-    code_web=$(curl "$iface" -s -o /dev/null -w "%{http_code}" --max-time 5 -A "Mozilla/5.0" "https://chatgpt.com")
+    code_web=$(curl "$iface" -s -o /dev/null -w "%{http_code}" --max-time 5 -A "$ua" "https://chatgpt.com")
     
+    if [[ "$code_web" == "403" ]]; then
+        local code_robots
+        code_robots=$(curl "$iface" -s -o /dev/null -w "%{http_code}" --max-time 3 -A "$ua" "https://chatgpt.com/robots.txt")
+        if [[ "$code_robots" == "200" ]]; then
+            code_web="200"
+        fi
+    fi
+
     local code_app
-    code_app=$(curl "$iface" -s -o /dev/null -w "%{http_code}" --max-time 5 -A "Mozilla/5.0" "https://ios.chat.openai.com/public-api/mobile/server_status/v1")
+    code_app=$(curl "$iface" -s -o /dev/null -w "%{http_code}" --max-time 5 -A "$ua" "https://ios.chat.openai.com/public-api/mobile/server_status/v1")
     
     local end_time=$(date +%s%N)
     local duration=$(( (end_time - start_time) / 1000000 ))
@@ -53,7 +60,7 @@ check_chatgpt() {
     local web_status="❌"
     local app_status="❌"
     
-    if [[ "$code_web" == "200" || "$code_web" == "302" ]]; then web_status="✅"; fi
+    if [[ "$code_web" == "200" || "$code_web" == "301" || "$code_web" == "302" || "$code_web" == "307" ]]; then web_status="✅"; fi
     
     if [[ "$code_app" == "200" ]]; then app_status="✅"; fi
     
@@ -131,7 +138,11 @@ check_basic() {
     local duration=$(( (end_time - start_time) / 1000000 ))
     local time_label="(${duration}ms)"
     tput cuu1; tput el
-    if [[ "$code" == "200" || "$code" == "301" || "$code" == "302" ]]; then print_result "${name}" "${G}" "可用" "$time_label"; else print_result "${name}" "${R}" "失敗 ($code)" "$time_label"; fi
+    if [[ "$code" == "200" || "$code" == "301" || "$code" == "302" || "$code" == "307" ]]; then 
+        print_result "${name}" "${G}" "可用" "$time_label"
+    else 
+        print_result "${name}" "${R}" "失敗 ($code)" "$time_label"
+    fi
 }
 
 tool_ip_check() {
