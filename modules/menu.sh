@@ -117,12 +117,11 @@ show_menu() {
     echo -e "  ${P}5.${N} ${W}證書管理${N}       ${D}(ACME證書申請/證書切換)${N}"
     echo -e "  ${P}6.${N} ${W}出口策略${N}       ${D}(切換 IPv4/IPv6 優先級)${N}"
     echo -e "  ${P}7.${N} ${W}分流工具${N}       ${D}(WARP/Socks5/IPv6/DNS/SNI反向代理)${N}"
-    echo -e "  ${P}8.${N} ${W}核心與更新${N}     ${D}(核心/腳本版本管理)${N}"
-    echo -e "  ${P}9.${N} ${W}BBR 加速${N}       ${D}(原版BBR/XanMod-BBRv3)${N}"
     echo -e "${D}  ------------------------------------${N}"
-    echo -e "  ${P}10.${N}${G}查看 實時日誌${N}"
-    echo -e "  ${P}11.${N}${G}查看 節點信息${N}  ${D}(鏈接/二維碼/客戶端配置文件)${N}"
-    echo -e "  ${P}12.${N}${W}實用工具${N}       ${D}(IP檢測/備份/清理)${N}"
+    echo -e "  ${P}8.${N} ${W}核心與更新${N}     ${D}(核心/腳本版本管理)${N}"
+    echo -e "  ${P}9.${N} ${W}實用工具${N}       ${D}(BBR/Swap/SSH防護/IP檢測/備份/清理)${N}"
+    echo -e "  ${P}10.${N}${W}查看 實時日誌${N}"
+    echo -e "  ${P}11.${N}${G}查看 節點信息${N}  ${D}(鏈接/二維碼/客戶端JSON)${N}"
     echo -e "${D}  ------------------------------------${N}"
     echo -e "  ${P}13.${N}${R}卸載 Prism${N}     ${D}(刪除程序和配置)${N}"
     echo -e "  ${P}0.${N} 退出"
@@ -139,7 +138,7 @@ show_menu() {
         6) change_outbound_mode ;;
         7) submenu_routing ;;
         8) submenu_core ;;
-        9) action_bbr ;;
+        9) submenu_tool ;;
         10) action_view_logs ;;
         11) show_node_info ;;
         12) submenu_tool ;;
