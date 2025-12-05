@@ -30,11 +30,21 @@ detect_arch() {
 get_remote_version() {
     local type="$1"
     local version=""
+    local opts="-sL --max-time 10 -H \"User-Agent: Prism\" -H \"Accept: application/vnd.github.v3+json\""
+    
     if [[ "$type" == "prerelease" ]]; then
-        version=$(curl -sL --max-time 3 -H "User-Agent: Prism" "https://api.github.com/repos/SagerNet/sing-box/releases" | jq -r 'map(select(.prerelease)) | first | .tag_name')
+        version=$(curl $opts "https://api.github.com/repos/SagerNet/sing-box/releases" 2>/dev/null | jq -r 'map(select(.prerelease)) | first | .tag_name')
     else
-        version=$(curl -sL --max-time 3 -H "User-Agent: Prism" "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | jq -r .tag_name)
+        version=$(curl $opts "https://api.github.com/repos/SagerNet/sing-box/releases/latest" 2>/dev/null | jq -r .tag_name)
+        
+        if [[ -z "$version" || "$version" == "null" ]]; then
+            local url_effective=$(curl -sL -o /dev/null -w %{url_effective} --max-time 10 "https://github.com/SagerNet/sing-box/releases/latest")
+            version=$(echo "$url_effective" | awk -F'/' '{print $NF}')
+        fi
     fi
+    
+    if [[ "$version" != v* ]]; then version=""; fi
+    
     if [[ -z "$version" || "$version" == "null" ]]; then echo "N/A"; else echo "${version}"; fi
 }
 
@@ -49,8 +59,8 @@ install_singbox_core() {
     if [[ -f "${install_path}" ]]; then
         local current_version=$("${install_path}" version 2>/dev/null | grep "sing-box version" | awk '{print $3}')
         if [[ "${target_version#v}" == "${current_version#v}" ]]; then
-            success "當前已是目標版本 (${target_version})"
             create_systemd_service
+            success "當前已是目標版本 (${target_version})"
             return 0
         fi
     fi
@@ -75,6 +85,36 @@ install_singbox_core() {
     
     run_step "部署二進制文件" "${extract_cmd} && ${install_cmd} && ${chmod_cmd} && ${cleanup_cmd}"
         
+    local major=$(echo "$raw_ver" | cut -d. -f1)
+    local minor=$(echo "$raw_ver" | cut -d. -f2)
+
+    if [[ "$major" -eq 1 && "$minor" -lt 12 ]]; then
+        local secrets="${CONFIG_DIR}/secrets.env"
+        if [[ -f "$secrets" ]]; then
+            local need_fix=false
+            
+            if grep -q "export PRISM_ENABLE_ANYTLS=\"true\"" "$secrets"; then
+                sed -i 's/export PRISM_ENABLE_ANYTLS="true"/export PRISM_ENABLE_ANYTLS="false"/' "$secrets"
+                need_fix=true
+            fi
+            if grep -q "export PRISM_ENABLE_ANYTLS_REALITY=\"true\"" "$secrets"; then
+                sed -i 's/export PRISM_ENABLE_ANYTLS_REALITY="true"/export PRISM_ENABLE_ANYTLS_REALITY="false"/' "$secrets"
+                need_fix=true
+            fi
+            
+            if [[ "$need_fix" == "true" ]]; then
+                warn "檢測到目標核心版本 ($target_version) 不支持 AnyTLS。"
+                info "已自動關閉 AnyTLS 相關協議以防止服務崩潰。"
+            fi
+        fi
+    fi
+                
+    info "正在根據新核心適配配置文件..."
+    if [[ -f "${BASE_DIR}/modules/config.sh" ]]; then
+        source "${BASE_DIR}/modules/config.sh"
+        build_config
+    fi
+
     if [[ -f "${install_path}" ]]; then
         success "Sing-box 安裝成功"
         create_systemd_service
@@ -96,6 +136,9 @@ After=network.target nss-lookup.target
 [Service]
 User=root
 WorkingDirectory=${WORK_DIR}
+Environment="ENABLE_DEPRECATED_LEGACY_DNS_SERVERS=true"
+Environment="ENABLE_DEPRECATED_LEGACY_DOMAIN_STRATEGY_OPTIONS=true"
+Environment="ENABLE_DEPRECATED_SPECIAL_OUTBOUNDS=true"
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
 ExecStart=${SINGBOX_BIN} run -c ${CONFIG_DIR}/config.json
