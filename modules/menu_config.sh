@@ -352,7 +352,7 @@ submenu_config() {
     echo -e " ${P}>>> 配置與協議管理${N}"
     echo -e "${SEP}"
     echo -e "  ${P}1.${N} ${C}協議管理${N}          ${D}(開啟/關閉 特定協議)${N}"
-    echo -e "  ${P}2.${N} ${W}更換 Reality 偽裝${N} ${D}(SNI)${N}"
+    echo -e "  ${P}2.${N} ${W}更換 SNI域名${N}      ${D}(Reality 偽裝域名)${N}"
     echo -e "  ${P}3.${N} ${W}更換 全協議 UUID${N}"
     echo -e "  ${P}4.${N} ${W}更換 端口${N}"
     echo -e "  ${P}5.${N} ${G}刷新 服務端配置${N}   ${D}(重新編譯並重啟服務)${N}"
