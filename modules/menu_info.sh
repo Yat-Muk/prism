@@ -106,8 +106,8 @@ display_links_and_qr() {
         p_kv "Auth (認證類型)"     "password"
         p_kv "Password (密碼)"     "${W}${PRISM_HY2_PASSWORD}${N}"
         
-        local sni="www.bing.com"; local insecure_val="1"; local cert_status="${R}自簽名 (Self-signed)${N}"; local insecure_display="${Y}True${N}"
-        if [[ "${PRISM_HY2_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then sni="${PRISM_ACME_DOMAIN}"; insecure_val="0"; cert_status="${G}ACME (Valid)${N}"; insecure_display="${G}False${N}"; fi
+        local sni="www.bing.com"; local insecure_val="1"; local cert_status="${R}自簽名 (Self-signed)${N}"; local insecure_display="${Y}true${N}"
+        if [[ "${PRISM_HY2_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then sni="${PRISM_ACME_DOMAIN}"; insecure_val="0"; cert_status="${G}ACME (Valid)${N}"; insecure_display="${G}false${N}"; fi
         
         p_kv "SNI (偽裝域名)"      "${W}${sni}${N}"
         p_kv "Cert Mode (證書模式)" "${cert_status}"
@@ -135,8 +135,8 @@ display_links_and_qr() {
         p_kv "Congestion (擁塞)"   "bbr"
         p_kv "UDP Relay (轉發)"    "native"
         
-        local sni="www.bing.com"; local insecure_val="1"; local cert_status="${R}自簽名 (Self-signed)${N}"; local insecure_display="${Y}True${N}"
-        if [[ "${PRISM_TUIC_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then sni="${PRISM_ACME_DOMAIN}"; insecure_val="0"; cert_status="${G}ACME (Valid)${N}"; insecure_display="${G}False${N}"; fi
+        local sni="www.bing.com"; local insecure_val="1"; local cert_status="${R}自簽名 (Self-signed)${N}"; local insecure_display="${Y}true${N}"
+        if [[ "${PRISM_TUIC_CERT_MODE}" == "acme" && -n "${PRISM_ACME_DOMAIN}" ]]; then sni="${PRISM_ACME_DOMAIN}"; insecure_val="0"; cert_status="${G}ACME (Valid)${N}"; insecure_display="${G}false${N}"; fi
         
         p_kv "SNI (偽裝域名)"      "${W}${sni}${N}"
         p_kv "Cert Mode (證書模式)" "${cert_status}"
