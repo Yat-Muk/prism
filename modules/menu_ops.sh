@@ -142,12 +142,19 @@ action_uninstall() {
     fi
 
     echo ""
-    run_step "停止服務" "systemctl stop prism && systemctl disable prism"
-    run_step "刪除服務文件" "rm -f /etc/systemd/system/prism.service && systemctl daemon-reload"
-    run_step "刪除程序文件" "rm -rf ${WORK_DIR}"
-    run_step "刪除快捷指令" "rm -f /usr/bin/prism /usr/bin/vasma"
+    run_step "停止服務" "systemctl stop prism >/dev/null 2>&1; systemctl disable prism >/dev/null 2>&1"
     
-    echo -e ""
-    echo -e " ${G}[ OK ]${N} 卸載完成。感謝使用 Prism。"
+    run_step "刪除服務文件" "rm -f /etc/systemd/system/prism.service && systemctl daemon-reload"
+    
+    run_step "刪除快捷指令" "rm -f /usr/bin/prism /usr/bin/vasma"
+
+    echo -ne " ${B}[....]${N} 刪除程序文件..."
+    if [[ -d "${WORK_DIR}" ]]; then
+        rm -rf "${WORK_DIR}"
+    fi
+    echo -e "\r ${G}[DONE]${N} 刪除程序文件     "
+
+    echo ""
+    echo -e "${G}[ OK ]${N} 卸載完成。感謝使用 Prism。"
     exit 0
 }
