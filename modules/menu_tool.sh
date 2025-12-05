@@ -71,6 +71,7 @@ tool_ip_check() {
     if [[ -n "${IPV4_ADDR}" ]]; then
         echo -e " ${P}[ IPv4 ]${N}"; local info_4=$(curl -s -4 --max-time 3 ipinfo.io/json)
         local c_4=$(echo "$info_4" | grep '"country":' | cut -d'"' -f4); local o_4=$(echo "$info_4" | grep '"org":' | cut -d'"' -f4)
+        print_row "本機 IP" "${W}" "${IPV4_ADDR}"
         print_row "地區/ISP" "${Y}" "${c_4} - ${o_4}"; echo -e "${D}----------------------------------------------${N}"
         check_target "-4" "Google" "https://www.google.com"; check_target "-4" "YouTube" "https://www.youtube.com"; check_chatgpt_full "-4"; check_target "-4" "Netflix" "https://www.netflix.com/title/80018499"; check_target "-4" "Disney+" "https://www.disneyplus.com"
     else echo -e " ${D}[ IPv4 ] 無公網地址。${N}"; fi
@@ -78,6 +79,7 @@ tool_ip_check() {
     if [[ -n "${IPV6_ADDR}" ]]; then
         echo -e " ${P}[ IPv6 ]${N}"; local info_6=$(curl -s -6 --max-time 3 ipinfo.io/json)
         local c_6=$(echo "$info_6" | grep '"country":' | cut -d'"' -f4); local o_6=$(echo "$info_6" | grep '"org":' | cut -d'"' -f4)
+        print_row "本機 IP" "${W}" "${IPV6_ADDR}"
         print_row "地區/ISP" "${Y}" "${c_6} - ${o_6}"; echo -e "${D}----------------------------------------------${N}"
         check_target "-6" "Google" "https://www.google.com"; check_target "-6" "YouTube" "https://www.youtube.com"; check_chatgpt_full "-6"; check_target "-6" "Netflix" "https://www.netflix.com/title/80018499"; check_target "-6" "Disney+" "https://www.disneyplus.com"
     else echo -e " ${D}[ IPv6 ] 無公網地址。${N}"; fi
