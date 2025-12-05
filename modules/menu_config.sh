@@ -35,29 +35,42 @@ write_secret_no_apply() {
 }
 
 apply_changes() {
+    local mode="$1"
     echo ""
-    info "正在刷新服務端配置..."
     
     if [[ -f "${BASE_DIR}/modules/config.sh" ]]; then
         source "${BASE_DIR}/modules/config.sh"
         
-        build_config || { error "配置生成失敗"; return 1; }
+        if ! build_config; then error "配置生成失敗，操作終止"; return 1; fi
         
-        systemctl restart prism || warn "服務重啟似乎遇到了問題，請檢查日誌"
-        
-        if declare -f update_all_port_hopping > /dev/null; then 
-            update_all_port_hopping || warn "防火牆規則更新失敗"
+        if [[ "$mode" == "reload" ]]; then
+            if systemctl is-active --quiet prism; then
+                info "正在執行熱重載..."
+                
+                if systemctl reload prism; then
+                    success "配置已熱加載生效！"
+                else
+                    warn "熱重載響應失敗，轉為完全重啟..."
+                    systemctl restart prism
+                    success "服務已重啟生效！"
+                fi
+            else
+                warn "服務當前未運行，自動轉為啟動..."
+                systemctl restart prism
+                success "服務已啟動！"
+            fi
+        else
+            info "正在執行服務重啟..."
+            systemctl restart prism || warn "服務重啟異常，請檢查日誌"
+            
+            if declare -f update_all_port_hopping > /dev/null; then 
+                update_all_port_hopping || warn "防火牆規則更新失敗"
+            fi
+            success "服務已重啟生效！"
         fi
         
-        success "配置已刷新並生效！"
         source "${CONFIG_DIR}/secrets.env"
     fi
-}
-
-update_secret() {
-    write_secret_no_apply "$1" "$2"
-    apply_changes
-    read -p " 按回車返回菜單..."
 }
 
 change_outbound_mode() {
@@ -86,7 +99,7 @@ change_outbound_mode() {
     esac
     
     write_secret_no_apply "PRISM_OUTBOUND_MODE" "${new_mode}"
-    apply_changes
+    apply_changes "restart"
     sleep 1.5; show_menu
 }
 
@@ -170,8 +183,9 @@ submenu_protocol_switch() {
              write_secret_no_apply "PRISM_ENABLE_ANYTLS" "${PRISM_ENABLE_ANYTLS}"
              write_secret_no_apply "PRISM_ENABLE_ANYTLS_REALITY" "${PRISM_ENABLE_ANYTLS_REALITY}"
              write_secret_no_apply "PRISM_ENABLE_SHADOWTLS" "${PRISM_ENABLE_SHADOWTLS}"
-             apply_changes
+             apply_changes "restart"
              show_menu; return
+             read -p " 按回車返回菜單..."; show_menu; return
         elif [[ "$input_str" == "0" ]]; then 
             submenu_config; return
         else
@@ -204,8 +218,9 @@ change_reality_sni() {
     read -p " 請輸入新的 SNI (輸入 0 或回車取消): " new_sni
     if [[ "$new_sni" == "0" || -z "$new_sni" ]]; then submenu_config; return; fi
     
-    update_secret "PRISM_DEST" "$new_sni"
-    show_menu
+    write_secret_no_apply "PRISM_DEST" "$new_sni"
+    apply_changes "reload"
+    read -p " 按回車返回菜單..."; show_menu; return
 }
 
 change_uuid() {
@@ -236,7 +251,8 @@ change_uuid() {
     if [[ -n "$new_uuid" ]]; then
         write_secret_no_apply "PRISM_UUID" "$new_uuid"
         write_secret_no_apply "PRISM_TUIC_UUID" "$new_uuid"
-        apply_changes
+        apply_changes "reload"
+        read -p " 按回車返回菜單..."
         show_menu; return
     fi
     submenu_config
@@ -328,9 +344,8 @@ change_port_menu() {
                     else echo -e "${R} 格式錯誤${N}"; fi
                 done
             fi
-        fi
-        
-        apply_changes
+        fi 
+        apply_changes "restart"
     done
     submenu_config
 }
