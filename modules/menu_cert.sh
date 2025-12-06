@@ -15,6 +15,25 @@
 if [[ -f "${BASE_DIR}/modules/cert.sh" ]]; then source "${BASE_DIR}/modules/cert.sh"; fi
 if [[ -f "${BASE_DIR}/modules/menu_config.sh" ]]; then source "${BASE_DIR}/modules/menu_config.sh"; fi
 
+get_current_ca() {
+    local account_conf="$ACME_HOME/account.conf"
+    local ca_name="ZeroSSL (默認)"
+    
+    if [[ -f "$account_conf" ]]; then
+        local val=$(grep "^DEFAULT_CA" "$account_conf" | awk -F '=' '{print $2}' | tr -d "'\" ")
+        
+        if [[ -n "$val" ]]; then
+            case "$val" in
+                "letsencrypt") ca_name="Let's Encrypt" ;;
+                "zerossl") ca_name="ZeroSSL" ;;
+                "google") ca_name="Google Public CA" ;;
+                "buypass") ca_name="Buypass" ;;
+                *) ca_name="$val" ;;
+            esac
+        fi
+    fi
+    echo "$ca_name"
+
 get_cert_remaining_days() {
     local cert_file="$1"
     if [[ ! -f "$cert_file" ]]; then echo "N/A"; return; fi
@@ -38,7 +57,7 @@ get_cert_end_date() {
 }
 
 list_local_certs() {
-    echo -e " ${B}>>> 當前證書列表 (Current Certificates):${N}"
+    echo -e " ${W}當前證書列表:${N}"
     local count=0
     
     if [[ -d "${ACME_CERT_DIR}" ]]; then
@@ -123,16 +142,61 @@ view_cert_details() {
     read -p "按回車返回..."
 }
 
+switch_acme_ca() {
+    clear; print_banner
+    echo -e " ${P}>>> 切換證書頒發機構 (Switch CA)${N}"
+    echo -e " ${D}默認 CA 為 ZeroSSL，如遇申請失敗(速率限制)可切換。${N}"
+    echo -e "${SEP}"
+    echo -e "  ${P}1.${N} ${G}Let's Encrypt${N}  ${D}(推薦，穩定)${N}"
+    echo -e "  ${P}2.${N} ${W}ZeroSSL${N}        ${D}(默認，偶爾繁忙)${N}"
+    echo -e "  ${P}3.${N} ${W}Google Public CA${N}"
+    echo -e "  ${P}4.${N} ${W}Buypass${N}        ${D}(180天有效期)${N}"
+    echo -e "${SEP}"
+    echo -e "  ${P}0.${N} 返回"
+    echo -e "${SEP}"
+    echo -ne " 請輸入選項: "; read -r ca_choice
+    
+    local server_name=""
+    case "$ca_choice" in
+        1) server_name="letsencrypt" ;;
+        2) server_name="zerossl" ;;
+        3) server_name="google" ;;
+        4) server_name="buypass" ;;
+        0) return ;;
+        *) error "無效輸入"; sleep 1; return ;;
+    esac
+    
+    if [[ -n "$server_name" ]]; then
+        info "正在切換默認 CA 為: ${server_name}..."
+        if declare -f install_acme_core > /dev/null; then install_acme_core; fi
+        "$ACME_HOME"/acme.sh --set-default-ca --server "$server_name"
+        local ret=$?
+        
+        if [[ $ret -eq 0 ]]; then
+            success "切換成功！下次申請證書將使用 ${server_name}。"
+        else
+            error "切換失敗，acme.sh 返回錯誤碼 $ret"
+        fi
+    fi
+    sleep 1
+}
+
 submenu_cert_apply() {
     if declare -f install_acme_core > /dev/null; then install_acme_core; else echo -e "${R}[Err] 核心證書模塊丟失${N}"; read -p "..."; return; fi
 
     while true; do
+        local current_ca=$(get_current_ca)
+        
         clear; print_banner
+        echo -e " ${P}>>> 申請 ACME 證書${N}"
+        echo -e " 當前 CA 機構: ${C}${current_ca}${N}"
+        echo -e "${SEP}"
         list_local_certs
         echo -e "  ${P}1.${N} ${W}申請證書${N}     ${D}(HTTP/80端口模式 - 需釋放端口)${N}"
         echo -e "  ${P}2.${N} ${W}申請證書${N}     ${D}(DNS API模式 - 支持泛域名)${N}"
         echo -e "  ${P}3.${N} ${W}查看證書信息${N}"
-        echo -e "  ${P}4.${N} ${R}強制續期證書${N}"
+        echo -e "  ${P}4.${N} ${W}切換 CA 機構${N} ${D}(解決申請失敗/速率限制)${N}"
+        echo -e "  ${P}5.${N} ${R}強制續期證書${N}"
         echo -e "${SEP}"
         echo -e "  ${P}0.${N} 返回上級菜單"
         echo -e "${SEP}"
@@ -201,7 +265,8 @@ submenu_cert_apply() {
                 fi
                 ;;
             3) view_cert_details ;;
-            4) echo ""; info "正在強制續期..."; "$ACME_HOME"/acme.sh --cron --force; success "執行完畢"; read -p "按回車繼續..." ;;
+            4) switch_acme_ca ;;
+            5) echo ""; info "正在強制續期..."; "$ACME_HOME"/acme.sh --cron --force; success "執行完畢"; read -p "按回車繼續..." ;;
             0) break ;; 
             *) ;;
         esac
