@@ -185,9 +185,9 @@ submenu_protocol_switch() {
         echo -e "${SEP}"
         status_icon() { if [[ "${1:-false}" == "true" ]]; then echo -e "${G}● 開啟${N}"; else echo -e "${D}○ 關閉${N}"; fi; }
         
-        echo -e "  ${P}1.${N} ${W}VLESS Reality Vision${N}  $(status_icon ${PRISM_ENABLE_REALITY_VISION:-false})"
+        echo -e "  ${P}1.${N} ${W}VLESS Reality Vision${N}  $(status_icon ${PRISM_ENABLE_REALITY_VISION:-false}) ${Y}[推薦]${N}"
         echo -e "  ${P}2.${N} ${W}VLESS Reality gRPC${N}    $(status_icon ${PRISM_ENABLE_REALITY_GRPC:-false})"
-        echo -e "  ${P}3.${N} ${W}Hysteria 2${N}            $(status_icon ${PRISM_ENABLE_HY2:-false})"
+        echo -e "  ${P}3.${N} ${W}Hysteria 2${N}            $(status_icon ${PRISM_ENABLE_HY2:-false}) ${Y}[高速]${N}"
         echo -e "  ${P}4.${N} ${W}TUIC v5${N}               $(status_icon ${PRISM_ENABLE_TUIC:-false})"
         echo -e "  ${P}5.${N} ${W}AnyTLS${N}                $(status_icon ${PRISM_ENABLE_ANYTLS:-false})"
         echo -e "  ${P}6.${N} ${W}AnyTLS + Reality${N}      $(status_icon ${PRISM_ENABLE_ANYTLS_REALITY:-false})"
