@@ -33,6 +33,7 @@ get_current_ca() {
         fi
     fi
     echo "$ca_name"
+}
 
 get_cert_remaining_days() {
     local cert_file="$1"
