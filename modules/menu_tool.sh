@@ -119,25 +119,22 @@ tool_backup() {
         
         if [[ "$choice" == "0" ]]; then return; fi
         
-        case "$choice" in
-        1)
+        if [[ "$choice" == "1" ]]; then
             echo -ne " 確認創建新備份? [y/N]: "; read -r confirm
-            if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then return; fi
+            if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then continue; fi
             local fname="prism_backup_$(date +%Y%m%d_%H%M%S).tar.gz"; local fpath="/root/${fname}"
             mkdir -p "${WORK_DIR}/cert" "${WORK_DIR}/cert_acme"
             if tar -czf "$fpath" -C "${WORK_DIR}" conf/secrets.env cert cert_acme >/dev/null 2>&1; then success "已創建: ${fname}"; else error "創建失敗"; fi
-            read -p " 按回車繼續..." ;;
-        2)
-            if [[ "$has_files" != "true" ]]; then error "無備份可刪"; return; fi
+            read -p " 按回車繼續..."
+        elif [[ "$choice" == "2" && "$has_files" == "true" ]]; then
             read -p " 請輸入要刪除的編號: " idx
             local target="${backup_files[$idx]}"
             if [[ -f "$target" ]]; then rm -f "$target"; success "已刪除: $(basename "$target")"; else error "無效編號"; fi
-            read -p " 按回車繼續..." ;;
-        3)
-            if [[ "$has_files" != "true" ]]; then error "無備份可下"; return; fi
+            read -p " 按回車繼續..."
+        elif [[ "$choice" == "3" && "$has_files" == "true" ]]; then
             read -p " 請輸入要下載的編號: " idx
             local target="${backup_files[$idx]}"
-            if [[ ! -f "$target" ]]; then error "無效編號"; sleep 1; return; fi
+            if [[ ! -f "$target" ]]; then error "無效編號"; sleep 1; continue; fi
             local fname=$(basename "$target")
             echo ""; echo -e " 請選擇下載方式:"
             echo -e "  ${P}1.${N} ${W}第三方託管 (Transfer.sh)${N}  ${D}(簡單，公開鏈接)${N}"
@@ -148,9 +145,8 @@ tool_backup() {
                 local url=$(curl -s --upload-file "$target" "https://transfer.sh/${fname}")
                 if [[ "$url" == http* ]]; then echo -e "${SEP}"; echo -e " 下載鏈接: ${G}${url}${N}"; echo -e "${SEP}"; echo -e " ${Y}注意：鏈接有效期 14 天，請勿洩露。${N}"; else error "上傳失敗"; fi
             elif [[ "$method" == "2" ]]; then
-                if [[ -f "${CONFIG_DIR}/secrets.env" ]]; then source "${CONFIG_DIR}/secrets.env"; fi
                 local crt_file="${ACME_CERT_DIR}/${PRISM_ACME_DOMAIN}.crt"; local key_file="${ACME_CERT_DIR}/${PRISM_ACME_DOMAIN}.key"
-                if [[ -z "${PRISM_ACME_DOMAIN}" || ! -f "$crt_file" ]]; then error "未檢測到 ACME 域名證書，無法啟動 HTTPS 服務。"; echo -e " 請先在 [5. 證書管理] 中申請證書。"; else
+                if [[ -z "${PRISM_ACME_DOMAIN}" || ! -f "$crt_file" ]]; then error "未檢測到 ACME 域名證書，無法啟動 HTTPS 服務。"; else
                     local tmp_port=$((RANDOM % 10000 + 50000)); local tmp_dir="${TEMP_DIR}/dl_$(date +%s)"; mkdir -p "$tmp_dir"; cp "$target" "$tmp_dir/"
                     echo ""; info "正在啟動臨時安全服務器..."
                     echo -e " 地址: ${G}https://${PRISM_ACME_DOMAIN}:${tmp_port}/${fname}${N}"
@@ -160,9 +156,9 @@ tool_backup() {
                     local pid=$!; trap "kill $pid 2>/dev/null; rm -rf $tmp_dir; echo -e '\n\n ${G}服務已停止${N}'; return" SIGINT; wait $pid 2>/dev/null
                 fi
             fi
-            read -p " 按回車繼續..." ;;
-        *) error "無效輸入"; sleep 1 ;;
-    esac
+            read -p " 按回車繼續..."
+        else error "無效輸入"; sleep 1; fi
+    done
 }
 
 tool_cleanup() {
@@ -173,10 +169,11 @@ tool_cleanup() {
 }
 
 tool_swap() {
-    clear; print_banner; echo -e " ${B}>>> 虛擬內存 (Swap) 管理${N}"; echo -e "${SEP}"
+    clear; print_banner; echo -e " ${B}>>> 虛擬內存 (Swap) 管理${N}"
+    echo -e "${D}功能說明：使用硬盤空間模擬內存，防止小內存機器崩潰。${N}"
+    echo -e "${SEP}"
     local s=$(free -m | grep Swap | awk '{print $2}')
     echo -e " 當前 Swap: ${C}${s} MB${N}"; echo -e "${SEP}"
-    echo -e "${D}功能說明：使用硬盤空間模擬內存，防止小內存機器崩潰。${N}"
     echo -e "  ${P}1.${N} ${W}添加/設置 Swap${N}"; echo -e "  ${P}2.${N} ${W}刪除 Swap${N}"; echo -e "${SEP}"; echo -e "  ${P}0.${N} 返回"; echo -e "${SEP}"
     echo -ne " 請輸入選項: "; read -r c
     if [[ "$c" == "0" ]]; then return; fi
@@ -198,10 +195,11 @@ tool_swap() {
 tool_fail2ban() {
     if [[ -z "${PKG_MANAGER}" ]]; then detect_os; fi
     
-    clear; print_banner; echo -e " ${B}>>> Fail2Ban 防護${N}"; echo -e "${SEP}"
+    clear; print_banner; echo -e " ${B}>>> Fail2Ban 防護${N}"
+    echo -e "${D}功能說明：自動封禁多次輸錯 SSH 密碼的 IP，防止暴力破解。${N}"
+    echo -e "${SEP}"
     local st="${R}未安裝${N}"; if command -v fail2ban-server &>/dev/null; then if systemctl is-active --quiet fail2ban; then st="${G}運行中${N}"; else st="${Y}已停止${N}"; fi; fi
     echo -e " 狀態: ${st}"; echo -e "${SEP}"
-    echo -e "${D}功能說明：自動封禁多次輸錯 SSH 密碼的 IP，防止暴力破解。${N}"
     echo -e "  ${P}1.${N} ${W}安裝並開啟${N}"; echo -e "  ${P}2.${N} ${W}卸載${N}"; echo -e "  ${P}3.${N} ${W}查看封禁列表${N}"; echo -e "${SEP}"; echo -e "  ${P}0.${N} 返回"; echo -e "${SEP}"
     echo -ne " 選項: "; read -r c
     if [[ "$c" == "0" ]]; then return; fi
