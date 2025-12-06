@@ -422,7 +422,7 @@ submenu_config() {
     clear; print_banner
     echo -e " ${P}>>> 配置與協議管理${N}"
     echo -e "${SEP}"
-    echo -e "  ${P}1.${N} ${C}協議管理${N}          ${D}(開啟/關閉 特定協議)${N}"
+    echo -e "  ${P}1.${N} ${Y}協議管理${N}          ${D}(開啟/關閉 特定協議)${N}"
     echo -e "  ${P}2.${N} ${W}更換 SNI域名${N}      ${D}(Reality 偽裝域名)${N}"
     echo -e "  ${P}3.${N} ${W}更換 全協議 UUID${N}"
     echo -e "  ${P}4.${N} ${W}更換 端口${N}"
