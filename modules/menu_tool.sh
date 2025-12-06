@@ -298,7 +298,7 @@ submenu_tool() {
         echo -e " ${B}>>> 實用工具箱 (Toolbox)${N}"; echo -e "${SEP}"
         echo -e "  ${P}1.${N} ${W}流媒體/IP檢測${N}     ${D}(原生檢測/無外部依賴)${N}"
         echo -e "  ${P}2.${N} ${W}虛擬內存 (Swap)${N}   ${D}(弱雞適用)${N}"
-        echo -e "  ${P}3.${N} ${C}Fail2Ban 防護${N}     ${D}(SSH 安全防護)${N}"
+        echo -e "  ${P}3.${N} ${Y}Fail2Ban 防護${N}     ${D}(SSH 安全防護)${N}"
         echo -e "  ${P}4.${N} ${W}校準服務器時間${N}    ${D}(Asia/Shanghai)${N}"
         echo -e "  ${P}5.${N} ${W}BBR 加速與優化${N}    ${D}(原版BBR/XanMod-BBRv3)${N}"
         echo -e "  ${P}6.${N} ${W}系統清理${N}          ${D}(清空日誌/緩存)${N}"
