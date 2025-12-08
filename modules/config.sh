@@ -12,6 +12,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 
+if [[ -z "${BASE_DIR}" ]]; then
+    BASE_DIR="/etc/prism"
+fi
+
 source "${BASE_DIR}/core/env.sh"
 source "${BASE_DIR}/core/log.sh"
 source "${BASE_DIR}/core/ui.sh"
