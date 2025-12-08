@@ -71,11 +71,11 @@ prism
   10.查看 實時日誌
   11.查看 節點信息   (鏈接/二維碼/客戶端JSON)
   ------------------------------------
-  13.卸載 Prism     (刪除程序和配置)
+  12.卸載 Prism     (刪除程序和配置)
 ```
-<img width="435" height="602" alt="截圖 2025-12-05 19 18 54" src="https://github.com/user-attachments/assets/b438ffc1-6858-4be5-a513-1877aa58cb9e" />
+<img width="439" height="593" alt="截圖 2025-12-09 02 56 54" src="https://github.com/user-attachments/assets/8419ea69-24bb-455b-9360-d38c06456f7d" />
 
-<img width="399" height="401" alt="截圖 2025-12-05 14 51 54" src="https://github.com/user-attachments/assets/5a316263-e0cb-4c9a-b9db-5665c1c81423" />
+<img width="439" height="596" alt="截圖 2025-12-09 02 58 22" src="https://github.com/user-attachments/assets/8a42072e-0368-4d2b-bf0a-7363c23ce6fa" />
 
 ## 🔧 進階功能
 
