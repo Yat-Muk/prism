@@ -41,9 +41,6 @@ action_view_logs() {
     if [[ ! -f "${traffic_log}" ]]; then touch "${traffic_log}"; chmod 600 "${traffic_log}"; fi
     if [[ ! -f "${script_log}" ]]; then touch "${script_log}"; fi
 
-    echo -e " ${D}[圖例]${N} ${C}核心組件${N} ${Y}遠程IP${N} ${G}成功/信息${N} ${R}錯誤/警告${N}"
-    echo -e "${SEP}"
-
     trap 'trap - SIGINT; echo -e "\n${D}監控已停止。${N}"; sleep 1; show_menu; return' SIGINT
 
     if command -v gawk &>/dev/null; then
