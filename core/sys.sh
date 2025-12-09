@@ -75,7 +75,7 @@ detect_os() {
 }
 
 install_base_dependencies() {
-    local required_cmds="curl wget tar socat jq openssl"
+    local required_cmds="curl wget tar socat jq openssl gawk"
     local missing_packages=""
     
     if [[ "${PKG_MANAGER}" == "apt" ]]; then
