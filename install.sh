@@ -52,7 +52,7 @@ check_env() {
 
     echo_info "檢查基礎環境與依賴..."
     
-    local deps="wget curl tar jq openssl"
+    local deps="wget curl tar jq openssl gawk"
     local install_cmd=""
     local pkg_manager=""
     
