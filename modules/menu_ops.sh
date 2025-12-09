@@ -41,11 +41,67 @@ action_view_logs() {
     if [[ ! -f "${traffic_log}" ]]; then touch "${traffic_log}"; chmod 600 "${traffic_log}"; fi
     if [[ ! -f "${script_log}" ]]; then touch "${script_log}"; fi
 
-    echo -e " 正在監控: ${G}核心流量${N} & ${C}系統操作${N}"
+    echo -e " ${D}[圖例]${N} ${C}核心組件${N} ${Y}遠程IP${N} ${G}成功/信息${N} ${R}錯誤/警告${N}"
     echo -e "${SEP}"
 
-    trap 'trap - SIGINT; show_menu; return' SIGINT
-    tail -f -n 15 "${script_log}" "${traffic_log}"
+    trap 'trap - SIGINT; echo -e "\n${D}監控已停止。${N}"; sleep 1; show_menu; return' SIGINT
+
+    if command -v gawk &>/dev/null; then
+        echo -e " ${D}[圖例]${N} ${C}核心組件${N} ${Y}遠程IP${N} ${G}成功/信息${N} ${R}錯誤/警告${N}"
+        echo -e "${SEP}"
+        
+        tail -f -n 15 "${script_log}" "${traffic_log}" | gawk \
+        -v R="\033[31m" -v G="\033[32m" -v Y="\033[33m" -v B="\033[34m" -v P="\033[35m" -v C="\033[36m" -v W="\033[37m" -v D="\033[90m" -v N="\033[0m" '
+        {
+            line = $0
+            
+            if (line ~ /^==>/) {
+                if (line ~ /box.log/) source_name = "Sing-box 核心流量"
+                else if (line ~ /runtime.log/) source_name = "Prism 系統操作"
+                else source_name = "日誌源切換"
+                print "\n" P ":: " source_name " ::" N
+                fflush()
+                next
+            }
+
+            ts_matched = 0
+            if (match(line, /^\+?[0-9]{4}[^ ]+/)) ts_matched = 1
+            else if (match(line, /^\[[0-9: -]+\]/)) ts_matched = 1
+
+            if (ts_matched) {
+                ts = substr(line, RSTART, RLENGTH)
+                rest = substr(line, RSTART + RLENGTH)
+                line = D ts N rest
+            }
+
+            gsub(/INFO/, B "INFO" N, line)
+            gsub(/WARN/, Y "WARN" N, line)
+            gsub(/ERROR/, R "ERROR" N, line)
+            gsub(/FATAL/, R "FATAL" N, line)
+            gsub(/\[INFO\]/, B "[INFO]" N, line)
+            gsub(/\[WARN\]/, Y "[WARN]" N, line)
+            gsub(/\[ERR \]/, R "[ERR ]" N, line)
+
+            if (match(line, /(inbound|outbound)\/[a-zA-Z0-9_-]+/)) {
+                comp = substr(line, RSTART, RLENGTH)
+                sub(comp, C comp N, line)
+            }
+            
+            if (match(line, /[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/)) {
+                ip = substr(line, RSTART, RLENGTH)
+                sub(ip, Y ip N, line)
+            }
+
+            print line
+            fflush()
+        }'
+    else
+        echo -e " ${Y}[提示] 當前系統未安裝 gawk，日誌將以純文本顯示。${N}"
+        echo -e "     (執行 ${C}apt install gawk${N} 可啟用語法高亮)"
+        echo -e "${SEP}"
+        tail -f -n 15 "${script_log}" "${traffic_log}"
+    fi
+    
     trap - SIGINT
 }
 
